@@ -1,0 +1,126 @@
+/* src/styles/Profile.css */
+.profile-container {
+  padding: 20px;
+  max-width: 100%;
+}
+  
+.profile-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+  
+.profile-header .avatar img {
+  width: 100px;
+  height: 100px;
+  image-rendering: pixelated;
+  border: 3px solid #F1C40F;
+  margin-right: 20px;
+}
+  
+.info {
+  flex-grow: 1;
+}
+
+.info h2 {
+  margin: 0;
+  color: #F1C40F;
+}
+
+.info ul {
+  padding-left: 20px;
+  margin: 10px 0;
+}
+  
+.inventory h3, .quest-history h3 {
+  border-bottom: 2px solid #F1C40F;
+  padding-bottom: 8px;
+  margin-top: 25px;
+}
+
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+  
+.inventory-item {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+  
+.inventory-item img {
+  width: 50px;
+  height: 50px;
+  image-rendering: pixelated;
+  border: 2px solid #F1C40F;
+  transition: transform 0.2s;
+}
+
+.inventory-item img:hover {
+  transform: scale(1.1);
+}
+  
+.quest-history ul {
+  list-style: none;
+  padding: 0;
+}
+  
+.quest-history li {
+  margin-bottom: 12px;
+  padding: 8px;
+  background-color: #2C3E50;
+  border-left: 3px solid #F1C40F;
+}
+
+@media screen and (max-width: 768px) {
+  .profile-header .avatar img {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .inventory-grid {
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 10px;
+  }
+  
+  .inventory-item img {
+    width: 45px;
+    height: 45px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .profile-container {
+    padding: 15px 10px;
+  }
+  
+  .profile-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .profile-header .avatar img {
+    margin-bottom: 15px;
+    width: 70px;
+    height: 70px;
+  }
+  
+  .inventory-grid {
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 8px;
+  }
+  
+  .inventory-item img {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .quest-history li {
+    padding: 6px;
+    font-size: 0.9rem;
+  }
+}

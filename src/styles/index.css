@@ -1,0 +1,61 @@
+body {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+  background-color: #141414;
+  color: #ECF0F1;
+  /* Pour un rendu pixel art */
+  image-rendering: pixelated;
+  box-sizing: border-box;
+}
+
+* {
+  box-sizing: inherit;
+}
+
+h1, h2, h3 {
+  font-family: 'Press Start 2P', cursive;
+}
+
+main {
+  padding: 20px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Media Queries */
+@media screen and (max-width: 768px) {
+  h1 {
+    font-size: 1.6rem;
+  }
+  
+  h2 {
+    font-size: 1.2rem;
+  }
+  
+  h3 {
+    font-size: 1rem;
+  }
+  
+  main {
+    padding: 15px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  h1 {
+    font-size: 1.4rem;
+  }
+  
+  h2 {
+    font-size: 1.1rem;
+  }
+  
+  h3 {
+    font-size: 0.9rem;
+  }
+  
+  main {
+    padding: 10px;
+  }
+}
