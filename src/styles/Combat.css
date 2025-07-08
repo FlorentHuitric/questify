@@ -1,0 +1,370 @@
+/* src/styles/Combat.css */
+.combat-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  min-height: 100vh;
+  color: white;
+  font-family: 'Press Start 2P', monospace;
+}
+
+.combat-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.combat-header h1 {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.turn-indicator {
+  font-size: 1rem;
+  padding: 10px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 10px;
+  border: 2px solid #4a90e2;
+}
+
+.battle-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 40px 0;
+  padding: 20px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 15px;
+  border: 2px solid #333;
+}
+
+.player-side, .enemy-side {
+  flex: 1;
+  text-align: center;
+}
+
+.player-avatar, .enemy-avatar {
+  font-size: 4rem;
+  margin: 20px 0;
+  transition: transform 0.3s ease;
+}
+
+.player-avatar.attacking, .enemy-avatar.attacking {
+  transform: scale(1.2) translateX(20px);
+  animation: attack-animation 0.5s ease-in-out;
+}
+
+@keyframes attack-animation {
+  0% { transform: scale(1) translateX(0); }
+  50% { transform: scale(1.2) translateX(20px); }
+  100% { transform: scale(1) translateX(0); }
+}
+
+.stats-display {
+  background: rgba(0,0,0,0.5);
+  padding: 15px;
+  border-radius: 10px;
+  margin: 10px;
+}
+
+.stat-bar {
+  margin: 10px 0;
+  text-align: left;
+}
+
+.stat-bar label {
+  display: block;
+  font-size: 0.8rem;
+  margin-bottom: 5px;
+}
+
+.bar {
+  position: relative;
+  height: 20px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #333;
+}
+
+.bar-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+  border-radius: 10px;
+}
+
+.hp-bar .bar-fill {
+  background: linear-gradient(90deg, #ff4444, #ff6666);
+}
+
+.mp-bar .bar-fill {
+  background: linear-gradient(90deg, #4444ff, #6666ff);
+}
+
+.bar span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.7rem;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+.combat-log {
+  background: rgba(0,0,0,0.6);
+  padding: 15px;
+  border-radius: 10px;
+  margin: 20px 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.combat-log h3 {
+  margin-bottom: 10px;
+  font-size: 1rem;
+}
+
+.log-entry {
+  margin: 5px 0;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.log-entry.player {
+  background: rgba(68, 144, 226, 0.3);
+  border-left: 3px solid #4a90e2;
+}
+
+.log-entry.enemy {
+  background: rgba(226, 68, 68, 0.3);
+  border-left: 3px solid #e24444;
+}
+
+.action-panel {
+  background: rgba(0, 0, 0, 0.7);
+  padding: 20px;
+  border-radius: 15px;
+  margin: 20px;
+  border: 2px solid #4a90e2;
+}
+
+.action-panel h3 {
+  color: #ffd700;
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 1.2rem;
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.action-button {
+  background: linear-gradient(45deg, #34495e, #2c3e50);
+  color: white;
+  border: 2px solid #4a90e2;
+  padding: 15px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.8rem;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.action-button:hover:not(:disabled) {
+  background: linear-gradient(45deg, #4a90e2, #357abd);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(74, 144, 226, 0.4);
+}
+
+.action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-button.attack {
+  background: linear-gradient(45deg, #e74c3c, #c0392b);
+  border-color: #e74c3c;
+}
+
+.action-button.attack:hover:not(:disabled) {
+  background: linear-gradient(45deg, #c0392b, #a93226);
+}
+
+.action-button.magic {
+  background: linear-gradient(45deg, #9b59b6, #8e44ad);
+  border-color: #9b59b6;
+}
+
+.action-button.magic:hover:not(:disabled) {
+  background: linear-gradient(45deg, #8e44ad, #7d3c98);
+}
+
+.action-button.defend {
+  background: linear-gradient(45deg, #27ae60, #229954);
+  border-color: #27ae60;
+}
+
+.action-button.defend:hover:not(:disabled) {
+  background: linear-gradient(45deg, #229954, #1e8449);
+}
+
+.action-button.flee {
+  background: linear-gradient(45deg, #f39c12, #e67e22);
+  border-color: #f39c12;
+}
+
+.action-button.flee:hover:not(:disabled) {
+  background: linear-gradient(45deg, #e67e22, #d35400);
+}
+
+.action-button.selected {
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.action-name {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.action-description {
+  font-size: 0.6rem;
+  color: #bdc3c7;
+  margin-bottom: 5px;
+}
+
+.action-cost {
+  font-size: 0.7rem;
+  color: #3498db;
+}
+
+.back-button {
+  background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+  border-color: #95a5a6;
+}
+
+.back-button:hover:not(:disabled) {
+  background: linear-gradient(45deg, #7f8c8d, #6c7b7b);
+}
+
+.action-feedback {
+  text-align: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 15px;
+  margin: 20px;
+}
+
+.loading-spinner {
+  font-size: 2rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.action-button.item {
+  background: linear-gradient(45deg, #f39c12, #e67e22);
+  border-color: #f39c12;
+}
+
+.action-button.item:hover:not(:disabled) {
+  background: linear-gradient(45deg, #e67e22, #d35400);
+}
+
+.item-sprite {
+  font-size: 1.5rem;
+  margin-bottom: 5px;
+}
+
+.item-quantity {
+  font-size: 0.7rem;
+  color: #3498db;
+  margin-top: 5px;
+}
+
+.action-button.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.action-button.disabled:hover {
+  transform: none;
+  background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+}
+
+.combat-end-message {
+  text-align: center;
+  padding: 30px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 15px;
+  border: 2px solid #4a90e2;
+  margin: 20px 0;
+}
+
+.combat-end-message h2 {
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  color: #4a90e2;
+}
+
+.combat-end-message p {
+  font-size: 0.8rem;
+  margin-bottom: 20px;
+  color: #ccc;
+}
+
+.return-button {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 0.8rem;
+  font-family: 'Press Start 2P', monospace;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.return-button:hover {
+  background: #357abd;
+}
+
+.return-button:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 768px) {
+  .battle-field {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .action-buttons {
+    grid-template-columns: 1fr;
+  }
+  
+  .combat-container {
+    padding: 10px;
+  }
+  
+  .action-button {
+    font-size: 0.7rem;
+  }
+}

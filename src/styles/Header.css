@@ -1,0 +1,130 @@
+/* src/styles/Header.css */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #2C3E50;
+  padding: 10px 20px;
+  border-bottom: 2px solid #7F8C8D;
+  width: 100%;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+  
+.logo {
+  font-size: 1.5em;
+  color: #F1C40F;
+}
+  
+.menu {
+  display: flex;
+  gap: 20px;
+}
+
+.menu a {
+  margin: 0;
+  text-decoration: none;
+  color: #ECF0F1;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+.menu a:hover {
+  color: #F1C40F;
+}
+
+.menu-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 30px;
+  height: 21px;
+  cursor: pointer;
+}
+
+.menu-toggle span {
+  height: 3px;
+  width: 100%;
+  background-color: #ECF0F1;
+  border-radius: 3px;
+}
+
+.currency-display {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.8rem;
+}
+
+.currency {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 15px;
+  color: #ECF0F1;
+  background-color: rgba(52, 73, 94, 0.8);
+  border: 1px solid #7F8C8D;
+}
+
+.currency.gold {
+  background-color: rgba(241, 196, 15, 0.2);
+  border-color: #F1C40F;
+}
+
+.currency.gems {
+  background-color: rgba(155, 89, 182, 0.2);
+  border-color: #9B59B6;
+}
+
+.currency-icon {
+  font-size: 1.2em;
+}
+
+.currency-amount {
+  font-weight: bold;
+  min-width: 30px;
+  text-align: center;
+}
+
+@media screen and (max-width: 768px) {
+  .logo {
+    font-size: 1.3em;
+  }
+  
+  .menu a {
+    font-size: 0.8rem;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .menu-toggle {
+    display: flex;
+  }
+  
+  .menu {
+    display: none;
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    background-color: #2C3E50;
+    padding: 20px;
+    gap: 15px;
+    border-bottom: 2px solid #7F8C8D;
+  }
+  
+  .menu.active {
+    display: flex;
+  }
+  
+  .menu a {
+    width: 100%;
+    text-align: center;
+    padding: 10px 0;
+  }
+}

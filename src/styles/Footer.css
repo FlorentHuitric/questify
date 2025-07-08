@@ -1,0 +1,24 @@
+/* src/styles/Footer.css */
+.footer {
+  background-color: #2C3E50;
+  color: #ECF0F1;
+  padding: 15px;
+  text-align: center;
+  font-family: 'Press Start 2P', cursive;
+  width: 100%;
+  font-size: 0.8rem;
+}
+
+@media screen and (max-width: 768px) {
+  .footer {
+    padding: 12px;
+    font-size: 0.7rem;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .footer {
+    padding: 10px;
+    font-size: 0.6rem;
+  }
+}

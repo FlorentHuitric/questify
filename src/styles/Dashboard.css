@@ -1,0 +1,111 @@
+/* src/styles/Dashboard.css */
+.dashboard-container {
+  padding: 20px;
+  max-width: 100%;
+}
+  
+.avatar-stats {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+  
+.avatar img {
+  width: 100px;
+  height: 100px;
+  image-rendering: pixelated;
+  border: 3px solid #F1C40F;
+  margin-right: 20px;
+}
+  
+.stats .title {
+  color: #F1C40F;
+  margin-top: 0;
+}
+  
+.notifications {
+  margin-bottom: 20px;
+}
+
+.notifications ul {
+  list-style: none;
+  padding: 0;
+}
+  
+.notifications li {
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+  
+.xp-gain {
+  color: #27AE60;
+  font-weight: bold;
+  margin-left: 10px;
+}
+  
+.start-quest-button {
+  background-color: #27AE60;
+  border: 2px solid #F1C40F;
+  padding: 10px 20px;
+  color: #ECF0F1;
+  font-family: 'Press Start 2P', cursive;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: auto;
+}
+  
+.start-quest-button:hover {
+  background-color: #2ECC71;
+}
+
+@media screen and (max-width: 768px) {
+  .avatar img {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .start-quest-button {
+    padding: 8px 16px;
+    font-size: 0.9em;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .dashboard-container {
+    padding: 15px 10px;
+  }
+  
+  .avatar-stats {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .avatar img {
+    width: 70px;
+    height: 70px;
+    margin-bottom: 15px;
+  }
+  
+  .stats {
+    width: 100%;
+  }
+  
+  .start-quest-button {
+    width: 100%;
+    padding: 12px;
+    font-size: 0.8em;
+  }
+  
+  .notifications li {
+    flex-direction: column;
+    margin-bottom: 15px;
+  }
+  
+  .xp-gain {
+    margin-left: 0;
+    margin-top: 5px;
+  }
+}
