@@ -4,21 +4,36 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { CombatSystem } from '../systems/CombatSystem';
 import { Enemy, CombatAction, ConsumableItem } from '../types/GameTypes';
 import { useGame } from '../contexts/GameContext';
+import CombatTimeline from '../components/CombatTimeline';
+import SpeedDisplay from '../components/SpeedDisplay';
 import '../styles/Combat.css';
 
 const Combat: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { enemy } = location.state as { enemy: Enemy };
-  const { playerStats, inventory, useItem, addItem, addGold, getEnemyDrops, updatePlayerStats } = useGame();
+  const { inventory, useItem, addItem, addGold, getEnemyDrops, updatePlayerStats, getTotalStats } = useGame();
   
-  const [combatSystem] = useState(() => new CombatSystem(playerStats, enemy));
+  const totalPlayerStats = getTotalStats();
+  const [combatSystem] = useState(() => new CombatSystem(totalPlayerStats, enemy));
   const [combatState, setCombatState] = useState(combatSystem.getState());
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
   const [animating, setAnimating] = useState(false);
   const [showSpells, setShowSpells] = useState(false);
   const [showItems, setShowItems] = useState(false);
   const [rewardsGiven, setRewardsGiven] = useState(false);
+
+  // Fonction pour synchroniser les stats du combat avec les stats du joueur
+  const syncPlayerStats = () => {
+    const currentCombatStats = combatSystem.getState().playerStats;
+    const baseStats = getTotalStats();
+    
+    // Seuls les HP et MP changent pendant le combat, pas les stats de base
+    updatePlayerStats({
+      hp: Math.min(currentCombatStats.hp, baseStats.maxHp),
+      mp: Math.min(currentCombatStats.mp, baseStats.maxMp)
+    });
+  };
 
   const availableActions: CombatAction[] = [
     { type: 'attack', name: 'Attaquer', accuracy: 0.85, description: 'Attaque physique de base' },
@@ -34,49 +49,8 @@ const Combat: React.FC = () => {
     { type: 'magic', name: 'Soin', accuracy: 1.0, mpCost: 15, healAmount: 30, description: 'Récupère des PV' }
   ];
 
-  // Gérer la fin du combat - plus de useEffect automatique
-  const handleCombatEnd = () => {
-    if ((combatState.phase === 'victory' || combatState.phase === 'defeat') && !rewardsGiven) {
-      setRewardsGiven(true);
-      
-      // Synchroniser les stats du joueur avec le contexte global
-      const currentState = combatSystem.getState();
-      updatePlayerStats(currentState.playerStats);
-      
-      setTimeout(() => {
-        if (combatState.phase === 'victory') {
-          const rewards = combatSystem.getVictoryRewards();
-          const drops = getEnemyDrops(enemy);
-          
-          // Ajouter les récompenses
-          addGold(rewards.gold + drops.gold);
-          drops.items.forEach(item => addItem(item));
-          
-          let message = `🎉 Victoire ! +${rewards.xp} XP, +${rewards.gold + drops.gold} Or !`;
-          if (drops.items.length > 0) {
-            message += `\n🎁 Objets trouvés : ${drops.items.map(item => item.name).join(', ')}`;
-          }
-          
-          // Utiliser navigate normalement
-          navigate('/map', { 
-            state: { 
-              victory: true, 
-              rewards: { ...rewards, gold: rewards.gold + drops.gold },
-              drops: drops.items,
-              message
-            }
-          });
-        } else if (combatState.phase === 'defeat') {
-          navigate('/map', { 
-            state: { 
-              defeat: true,
-              message: 'Défaite... Réessayez plus tard !'
-            }
-          });
-        }
-      }, 2000);
-    }
-  };
+  // Supprimer handleCombatEnd et useEffect qui causent la boucle infinie
+  // La logique est maintenant uniquement dans le onClick du bouton
 
   const handleAction = async (action: CombatAction) => {
     if (animating || !combatSystem.isPlayerTurn()) return;
@@ -91,13 +65,8 @@ const Combat: React.FC = () => {
     // Attendre l'animation
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Si le combat n'est pas fini, tour de l'ennemi
-    if (!combatSystem.isCombatFinished()) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      combatSystem.executeEnemyAction();
-      setCombatState(combatSystem.getState());
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
+    // Continuer à jouer les tours ennemis tant que c'est leur tour
+    await processEnemyTurns();
     
     // Mettre à jour l'état après toutes les actions
     setCombatState(combatSystem.getState());
@@ -106,6 +75,15 @@ const Combat: React.FC = () => {
     setSelectedAction(null);
     setShowSpells(false);
     setShowItems(false);
+  };
+
+  const processEnemyTurns = async () => {
+    while (!combatSystem.isCombatFinished() && !combatSystem.isPlayerTurn()) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      combatSystem.executeEnemyAction();
+      setCombatState(combatSystem.getState());
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
   };
 
   const handleItemUse = (item: ConsumableItem) => {
@@ -291,6 +269,21 @@ const Combat: React.FC = () => {
         </div>
       </div>
 
+      {/* Timeline des tours et affichage de la vitesse */}
+      <div className="combat-info-panel">
+        <CombatTimeline 
+          turnOrder={combatState.turnOrder}
+          currentTurn={combatState.currentTurn}
+          playerName="Joueur"
+          enemyName={combatState.enemy.name}
+        />
+        
+        <SpeedDisplay 
+          playerStats={combatState.playerStats}
+          enemy={combatState.enemy}
+        />
+      </div>
+
       {renderCombatLog()}
 
       {!combatSystem.isCombatFinished() && !animating && combatSystem.isPlayerTurn() && (
@@ -307,18 +300,52 @@ const Combat: React.FC = () => {
           </h2>
           <p>
             {combatState.phase === 'victory' 
-              ? 'Retour à la carte dans quelques secondes...' 
-              : 'Vous serez ramené à la carte...'}
+              ? 'Cliquez pour retourner à la carte et récupérer vos récompenses !' 
+              : 'Cliquez pour retourner à la carte...'}
           </p>
           <button 
             className="return-button" 
             onClick={() => {
-              // Sauvegarder les stats du joueur après le combat
-              const currentState = combatSystem.getState();
-              updatePlayerStats(currentState.playerStats);
-              
-              // Naviguer vers la carte
-              navigate('/map');
+              if (!rewardsGiven) {
+                setRewardsGiven(true);
+                if (combatState.phase === 'victory') {
+                  const rewards = combatSystem.getVictoryRewards();
+                  const drops = getEnemyDrops(enemy);
+                  
+                  // Mettre à jour les stats du joueur avec les stats finales du combat
+                  syncPlayerStats();
+                  
+                  // Ajouter les récompenses
+                  addGold(rewards.gold + drops.gold);
+                  drops.items.forEach(item => addItem(item));
+                  
+                  let message = `🎉 Victoire ! +${rewards.xp} XP, +${rewards.gold + drops.gold} Or !`;
+                  if (drops.items.length > 0) {
+                    message += `\n🎁 Objets trouvés : ${drops.items.map(item => item.name).join(', ')}`;
+                  }
+                  
+                  navigate('/map', { 
+                    state: { 
+                      victory: true, 
+                      rewards: { ...rewards, gold: rewards.gold + drops.gold },
+                      drops: drops.items,
+                      message
+                    }
+                  });
+                } else if (combatState.phase === 'defeat') {
+                  // Mettre à jour les stats du joueur même en cas de défaite
+                  syncPlayerStats();
+                  
+                  navigate('/map', { 
+                    state: { 
+                      defeat: true,
+                      message: 'Défaite... Réessayez plus tard !'
+                    }
+                  });
+                }
+              } else {
+                navigate('/map');
+              }
             }}
           >
             Retour à la carte

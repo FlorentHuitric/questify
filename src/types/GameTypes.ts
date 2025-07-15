@@ -3,10 +3,23 @@ export interface PlayerStats {
   level: number;
   xp: number;
   maxXp: number;
-  strength: number;
-  agility: number;
-  wisdom: number;
-  constitution: number;
+  // Stats principales (comme FF)
+  strength: number;      // Force (attaque physique)
+  magic: number;         // Magie (attaque magique)
+  vitality: number;      // Vitalité (PV et résistance)
+  spirit: number;        // Esprit (PM et résistance magique)
+  dexterity: number;     // Dextérité (vitesse et précision)
+  luck: number;          // Chance (critiques et esquive)
+  // Stats dérivées
+  attack: number;        // Attaque physique totale
+  defense: number;       // Défense physique
+  magicAttack: number;   // Attaque magique totale
+  magicDefense: number;  // Défense magique
+  speed: number;         // Vitesse (ordre des tours)
+  hitRate: number;       // Précision (%)
+  criticalRate: number;  // Taux de critique (%)
+  evadeRate: number;     // Taux d'esquive (%)
+  // Santé et mana
   hp: number;
   maxHp: number;
   mp: number;
@@ -48,12 +61,43 @@ export interface CombatResult {
 export interface Equipment {
   id: string;
   name: string;
-  type: 'weapon' | 'armor' | 'accessory';
+  type: 'weapon' | 'helmet' | 'armor' | 'boots' | 'gloves' | 'ring' | 'amulet' | 'shield';
+  slot: 'weapon' | 'helmet' | 'armor' | 'boots' | 'gloves' | 'ring1' | 'ring2' | 'amulet' | 'shield';
+  // Stats principales
   strengthBonus: number;
-  agilityBonus: number;
-  wisdomBonus: number;
-  constitutionBonus: number;
+  magicBonus: number;
+  vitalityBonus: number;
+  spiritBonus: number;
+  dexterityBonus: number;
+  luckBonus: number;
+  // Stats dérivées
+  attackBonus: number;
+  defenseBonus: number;
+  magicAttackBonus: number;
+  magicDefenseBonus: number;
+  speedBonus: number;
+  hitRateBonus: number;
+  criticalRateBonus: number;
+  evadeRateBonus: number;
+  // Santé et mana
+  hpBonus?: number;
+  mpBonus?: number;
   sprite: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  levelRequired: number;
+  description: string;
+}
+
+export interface EquipmentSlots {
+  weapon?: Equipment;
+  helmet?: Equipment;
+  armor?: Equipment;
+  boots?: Equipment;
+  gloves?: Equipment;
+  ring1?: Equipment;
+  ring2?: Equipment;
+  amulet?: Equipment;
+  shield?: Equipment;
 }
 
 export interface Quest {
@@ -167,11 +211,7 @@ export interface GameState {
   playerClass: PlayerClass;
   currency: Currency;
   inventory: Inventory;
-  equippedItems: {
-    weapon?: Equipment;
-    armor?: Equipment;
-    accessory?: Equipment;
-  };
+  equippedItems: EquipmentSlots;
   unlockedZones: string[];
   completedQuests: string[];
   currentLocation?: string;

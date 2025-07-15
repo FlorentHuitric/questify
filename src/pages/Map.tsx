@@ -13,10 +13,11 @@ const Map: React.FC = () => {
   const [selectedZone, setSelectedZone] = useState<MapZone | null>(null);
   const [zones, setZones] = useState<MapZone[]>(mapZones);
   const [notification, setNotification] = useState<string | null>(null);
+  const [combatStateProcessed, setCombatStateProcessed] = useState(false);
 
   // Gérer les retours de combat - une seule fois
   useEffect(() => {
-    if (location.state) {
+    if (location.state && !combatStateProcessed) {
       const { victory, rewards, message } = location.state;
       
       if (victory && rewards) {
@@ -35,10 +36,19 @@ const Map: React.FC = () => {
         setTimeout(() => setNotification(null), 3000);
       }
       
+      setCombatStateProcessed(true);
+      
       // Nettoyer le state pour éviter les re-renders
       window.history.replaceState({}, document.title);
     }
-  }, [location.state, updatePlayerStats]); // Retirer playerStats.xp des dépendances
+  }, [location.state, combatStateProcessed, playerStats.xp, updatePlayerStats]); // Inclure toutes les dépendances nécessaires
+  
+  // Réinitialiser combatStateProcessed quand on vient d'une route sans state
+  useEffect(() => {
+    if (!location.state) {
+      setCombatStateProcessed(false);
+    }
+  }, [location.state]);
 
   // Débloquer les zones selon le niveau
   useEffect(() => {

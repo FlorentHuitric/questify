@@ -350,6 +350,21 @@
   transform: scale(0.98);
 }
 
+/* Combat info panel styles */
+.combat-info-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+@media (max-width: 968px) {
+  .combat-info-panel {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
 @media (max-width: 768px) {
   .battle-field {
     flex-direction: column;

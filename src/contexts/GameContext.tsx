@@ -1,13 +1,17 @@
 // src/contexts/GameContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { PlayerStats, ConsumableItem, Equipment, Enemy, Currency } from '../types/GameTypes';
-import { initialPlayerStats, consumableItems, shopItems } from '../data/GameData';
+import { PlayerStats, ConsumableItem, Equipment, Enemy, Currency, EquipmentSlots } from '../types/GameTypes';
+import { initialPlayerStats, consumableItems, shopItems, basicEquipment } from '../data/GameData';
 
 interface GameContextType {
   playerStats: PlayerStats;
   inventory: ConsumableItem[];
   equipment: Equipment[];
+  equippedItems: EquipmentSlots;
   currency: Currency;
+  gold: number;
+  crystals: number;
+  getTotalStats: () => PlayerStats;
   updatePlayerStats: (stats: Partial<PlayerStats>) => void;
   useItem: (itemId: string) => boolean;
   addItem: (item: ConsumableItem) => void;
@@ -19,7 +23,8 @@ interface GameContextType {
   loadGame: () => void;
   resetGame: () => void;
   getEnemyDrops: (enemy: Enemy) => { items: ConsumableItem[]; gold: number };
-  equipItem: (item: Equipment) => void;
+  equipItem: (item: Equipment, slot: keyof EquipmentSlots) => void;
+  unequipItem: (slot: keyof EquipmentSlots) => void;
   buyItem: (itemId: string, cost: number, currencyType: 'gold' | 'gems') => boolean;
 }
 
@@ -40,7 +45,8 @@ interface GameProviderProps {
 export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [playerStats, setPlayerStats] = useState<PlayerStats>(initialPlayerStats);
   const [inventory, setInventory] = useState<ConsumableItem[]>(consumableItems);
-  const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [equipment, setEquipment] = useState<Equipment[]>(basicEquipment);
+  const [equippedItems, setEquippedItems] = useState<EquipmentSlots>({});
   const [currency, setCurrency] = useState<Currency>({ gold: 100, gems: 0 }); // Monnaie de départ
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -101,13 +107,13 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       case 'boost-agility':
         setPlayerStats(prev => ({
           ...prev,
-          agility: prev.agility + item.value
+          dexterity: prev.dexterity + item.value
         }));
         break;
       case 'boost-wisdom':
         setPlayerStats(prev => ({
           ...prev,
-          wisdom: prev.wisdom + item.value
+          magic: prev.magic + item.value
         }));
         break;
     }
@@ -180,16 +186,67 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         addItem({ ...consumableItem, quantity: 1 });
       }
     } else if (shopItem.category === 'weapon' || shopItem.category === 'armor' || shopItem.category === 'accessory') {
-      // Créer un équipement
+      // Créer un équipement - mapper accessory vers des types spécifiques
+      let equipmentType: Equipment['type'];
+      let equipmentSlot: Equipment['slot'];
+      
+      if (shopItem.category === 'weapon') {
+        equipmentType = 'weapon';
+        equipmentSlot = 'weapon';
+      } else if (shopItem.category === 'armor') {
+        equipmentType = 'armor';
+        equipmentSlot = 'armor';
+      } else {
+        // accessory - déterminer le type spécifique basé sur l'ID ou le nom
+        if (shopItem.id.includes('ring')) {
+          equipmentType = 'ring';
+          equipmentSlot = 'ring1';
+        } else if (shopItem.id.includes('amulet')) {
+          equipmentType = 'amulet';
+          equipmentSlot = 'amulet';
+        } else if (shopItem.id.includes('helmet')) {
+          equipmentType = 'helmet';
+          equipmentSlot = 'helmet';
+        } else if (shopItem.id.includes('boots')) {
+          equipmentType = 'boots';
+          equipmentSlot = 'boots';
+        } else if (shopItem.id.includes('gloves')) {
+          equipmentType = 'gloves';
+          equipmentSlot = 'gloves';
+        } else if (shopItem.id.includes('shield')) {
+          equipmentType = 'shield';
+          equipmentSlot = 'shield';
+        } else {
+          equipmentType = 'ring'; // Par défaut
+          equipmentSlot = 'ring1';
+        }
+      }
+
       const newEquipment: Equipment = {
         id: shopItem.id,
         name: shopItem.name,
-        type: shopItem.category as 'weapon' | 'armor' | 'accessory',
+        type: equipmentType,
+        slot: equipmentSlot,
         strengthBonus: shopItem.stats?.strength || 0,
-        agilityBonus: shopItem.stats?.agility || 0,
-        wisdomBonus: shopItem.stats?.wisdom || 0,
-        constitutionBonus: shopItem.stats?.constitution || 0,
-        sprite: shopItem.sprite
+        magicBonus: shopItem.stats?.magic || 0,
+        vitalityBonus: shopItem.stats?.vitality || 0,
+        spiritBonus: shopItem.stats?.spirit || 0,
+        dexterityBonus: shopItem.stats?.dexterity || 0,
+        luckBonus: shopItem.stats?.luck || 0,
+        attackBonus: shopItem.stats?.attack || 0,
+        defenseBonus: shopItem.stats?.defense || 0,
+        magicAttackBonus: shopItem.stats?.magicAttack || 0,
+        magicDefenseBonus: shopItem.stats?.magicDefense || 0,
+        speedBonus: shopItem.stats?.speed || 0,
+        hitRateBonus: shopItem.stats?.hitRate || 0,
+        criticalRateBonus: shopItem.stats?.criticalRate || 0,
+        evadeRateBonus: shopItem.stats?.evadeRate || 0,
+        hpBonus: shopItem.stats?.hp,
+        mpBonus: shopItem.stats?.mp,
+        sprite: shopItem.sprite,
+        rarity: shopItem.rarity,
+        levelRequired: shopItem.levelRequired,
+        description: shopItem.description
       };
       setEquipment(prev => [...prev, newEquipment]);
     }
@@ -197,11 +254,113 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     return true;
   };
 
-  const equipItem = (item: Equipment) => {
-    // Retirer l'équipement du même type s'il existe
-    const newEquipment = equipment.filter(eq => eq.type !== item.type);
-    newEquipment.push(item);
-    setEquipment(newEquipment);
+  const equipItem = (item: Equipment, slot: keyof EquipmentSlots) => {
+    // Vérifier si l'emplacement est valide pour cet équipement
+    if (item.slot !== slot && !(item.type === 'ring' && (slot === 'ring1' || slot === 'ring2'))) {
+      return; // Emplacement non valide
+    }
+    
+    // Équiper l'item
+    setEquippedItems(prev => ({
+      ...prev,
+      [slot]: item
+    }));
+    
+    // Retirer l'item de l'inventaire
+    setEquipment(prev => prev.filter(eq => eq.id !== item.id));
+  };
+
+  const unequipItem = (slot: keyof EquipmentSlots) => {
+    const item = equippedItems[slot];
+    if (!item) return;
+    
+    // Remettre l'item dans l'inventaire
+    setEquipment(prev => [...prev, item]);
+    
+    // Retirer l'item des équipements
+    setEquippedItems(prev => {
+      const newEquipped = { ...prev };
+      delete newEquipped[slot];
+      return newEquipped;
+    });
+  };
+
+  const calculateDerivedStats = (stats: PlayerStats): PlayerStats => {
+    // S'assurer que toutes les stats de base sont définies
+    const safeStats = {
+      ...initialPlayerStats, // Commencer avec les stats par défaut
+      ...stats, // Puis appliquer les stats passées en paramètre
+    };
+    
+    const newStats = { ...safeStats };
+    
+    console.log('Stats d\'entrée:', stats);
+    console.log('Stats sécurisées:', safeStats);
+    
+    // Calculer les stats dérivées comme dans Final Fantasy
+    newStats.attack = Math.floor(safeStats.strength * 2 + safeStats.dexterity * 0.5);
+    newStats.defense = Math.floor(safeStats.vitality * 1.5 + safeStats.strength * 0.2);
+    newStats.magicAttack = Math.floor(safeStats.magic * 2 + safeStats.spirit * 0.5);
+    newStats.magicDefense = Math.floor(safeStats.spirit * 1.2 + safeStats.magic * 0.3);
+    newStats.speed = Math.floor(safeStats.dexterity * 2 + safeStats.luck * 0.3);
+    newStats.hitRate = Math.floor(90 + safeStats.dexterity * 0.5 + safeStats.luck * 0.2);
+    newStats.criticalRate = Math.floor(2 + safeStats.luck * 0.3 + safeStats.dexterity * 0.1);
+    newStats.evadeRate = Math.floor(2 + safeStats.dexterity * 0.3 + safeStats.luck * 0.4);
+    
+    // Calculer HP et MP maximaux seulement s'ils ne sont pas déjà définis
+    if (!newStats.maxHp || newStats.maxHp < 100) {
+      newStats.maxHp = Math.floor(100 + safeStats.vitality * 8 + safeStats.level * 10);
+    }
+    if (!newStats.maxMp || newStats.maxMp < 20) {
+      newStats.maxMp = Math.floor(20 + safeStats.spirit * 4 + safeStats.magic * 2 + safeStats.level * 3);
+    }
+    
+    // S'assurer que les HP et MP actuels sont valides
+    if (!newStats.hp || newStats.hp <= 0) {
+      newStats.hp = newStats.maxHp;
+    } else {
+      newStats.hp = Math.min(newStats.hp, newStats.maxHp);
+    }
+    
+    if (!newStats.mp || newStats.mp <= 0) {
+      newStats.mp = newStats.maxMp;
+    } else {
+      newStats.mp = Math.min(newStats.mp, newStats.maxMp);
+    }
+    
+    console.log('Stats calculées:', newStats);
+    return newStats;
+  };
+
+  const getTotalStats = (): PlayerStats => {
+    let totalStats = { ...playerStats };
+    
+    Object.values(equippedItems).forEach(item => {
+      if (item) {
+        // Stats principales
+        totalStats.strength += item.strengthBonus;
+        totalStats.magic += item.magicBonus;
+        totalStats.vitality += item.vitalityBonus;
+        totalStats.spirit += item.spiritBonus;
+        totalStats.dexterity += item.dexterityBonus;
+        totalStats.luck += item.luckBonus;
+        // Stats dérivées (bonus directs)
+        totalStats.attack += item.attackBonus;
+        totalStats.defense += item.defenseBonus;
+        totalStats.magicAttack += item.magicAttackBonus;
+        totalStats.magicDefense += item.magicDefenseBonus;
+        totalStats.speed += item.speedBonus;
+        totalStats.hitRate += item.hitRateBonus;
+        totalStats.criticalRate += item.criticalRateBonus;
+        totalStats.evadeRate += item.evadeRateBonus;
+        // Santé et mana
+        if (item.hpBonus) totalStats.maxHp += item.hpBonus;
+        if (item.mpBonus) totalStats.maxMp += item.mpBonus;
+      }
+    });
+    
+    // Recalculer les stats dérivées avec les bonus d'équipement
+    return calculateDerivedStats(totalStats);
   };
 
   const getEnemyDrops = (enemy: Enemy): { items: ConsumableItem[]; gold: number } => {
@@ -252,6 +411,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       playerStats,
       inventory,
       equipment,
+      equippedItems,
       currency,
       timestamp: Date.now()
     };
@@ -263,22 +423,28 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     if (savedData) {
       try {
         const gameData = JSON.parse(savedData);
-        setPlayerStats(gameData.playerStats || initialPlayerStats);
+        const loadedStats = gameData.playerStats || initialPlayerStats;
+        setPlayerStats(calculateDerivedStats(loadedStats));
         setInventory(gameData.inventory || consumableItems);
-        setEquipment(gameData.equipment || []);
+        setEquipment(gameData.equipment || basicEquipment);
+        setEquippedItems(gameData.equippedItems || {});
         setCurrency(gameData.currency || { gold: 100, gems: 0 });
       } catch (error) {
         console.error('Erreur lors du chargement de la sauvegarde:', error);
         // En cas d'erreur, réinitialiser avec les valeurs par défaut
         resetGame();
       }
+    } else {
+      // Première fois - initialiser avec les stats dérivées
+      setPlayerStats(calculateDerivedStats(initialPlayerStats));
     }
   };
 
   const resetGame = () => {
-    setPlayerStats(initialPlayerStats);
+    setPlayerStats(calculateDerivedStats(initialPlayerStats));
     setInventory(consumableItems);
-    setEquipment([]);
+    setEquipment(basicEquipment);
+    setEquippedItems({});
     setCurrency({ gold: 100, gems: 0 });
     localStorage.removeItem('questify_save');
   };
@@ -287,7 +453,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     playerStats,
     inventory,
     equipment,
+    equippedItems,
     currency,
+    gold: currency.gold,
+    crystals: currency.gems, // Mapping gems -> crystals pour compatibilité
+    getTotalStats,
     updatePlayerStats,
     useItem,
     addItem,
@@ -300,6 +470,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     resetGame,
     getEnemyDrops,
     equipItem,
+    unequipItem,
     buyItem
   };
 

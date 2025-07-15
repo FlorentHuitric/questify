@@ -18,25 +18,36 @@ export class CombatSystem {
   }
 
   private calculateTurnOrder(player: PlayerStats, enemy: Enemy): ('player' | 'enemy')[] {
-    // Système basé sur l'agilité comme dans FF10
-    const playerSpeed = player.agility;
-    const enemySpeed = enemy.agility;
+    // Système inspiré de Final Fantasy X avec CT (Charge Time)
+    const playerSpeed = player.speed || player.dexterity * 2;
+    const enemySpeed = enemy.agility || 20;
     
     const order: ('player' | 'enemy')[] = [];
-    let playerTicks = 0;
-    let enemyTicks = 0;
+    let playerCT = 0;
+    let enemyCT = 0;
     
-    // Simuler 10 tours d'avance
-    for (let i = 0; i < 10; i++) {
-      playerTicks += playerSpeed;
-      enemyTicks += enemySpeed;
+    // Simuler plus de tours pour avoir une meilleure prédiction
+    for (let i = 0; i < 50; i++) {
+      // Ajouter la vitesse au CT de chaque acteur
+      playerCT += playerSpeed;
+      enemyCT += enemySpeed;
       
-      if (playerTicks >= enemyTicks) {
+      // Celui qui atteint 100 CT en premier joue
+      if (playerCT >= 100 && enemyCT >= 100) {
+        // En cas d'égalité, celui avec la plus haute vitesse joue en premier
+        if (playerSpeed >= enemySpeed) {
+          order.push('player');
+          playerCT -= 100;
+        } else {
+          order.push('enemy');
+          enemyCT -= 100;
+        }
+      } else if (playerCT >= 100) {
         order.push('player');
-        playerTicks -= 100; // Reset après action
-      } else {
+        playerCT -= 100;
+      } else if (enemyCT >= 100) {
         order.push('enemy');
-        enemyTicks -= 100; // Reset après action
+        enemyCT -= 100;
       }
     }
     
@@ -60,9 +71,9 @@ export class CombatSystem {
 
     switch (action.type) {
       case 'attack':
-        turn.damage = this.calculateDamage(this.state.playerStats.strength, this.state.enemy.agility);
-        turn.critical = Math.random() < 0.1; // 10% chance critique
-        turn.missed = Math.random() > action.accuracy;
+        turn.damage = this.calculatePhysicalDamage(this.state.playerStats);
+        turn.critical = Math.random() < (this.state.playerStats.criticalRate / 100);
+        turn.missed = Math.random() > (this.state.playerStats.hitRate / 100);
         
         if (!turn.missed) {
           const finalDamage = turn.critical ? turn.damage * 2 : turn.damage;
@@ -77,7 +88,7 @@ export class CombatSystem {
 
       case 'magic':
         if (this.state.playerStats.mp >= (action.mpCost || 0)) {
-          turn.damage = this.calculateMagicDamage(this.state.playerStats.wisdom);
+          turn.damage = this.calculateMagicalDamage(this.state.playerStats);
           turn.missed = Math.random() > action.accuracy;
           
           if (!turn.missed) {
@@ -95,8 +106,8 @@ export class CombatSystem {
         break;
 
       case 'flee':
-        // 50% chance de fuir, dépend de l'agilité
-        const fleeChance = Math.min(0.8, this.state.playerStats.agility / (this.state.playerStats.agility + this.state.enemy.agility));
+        // Chance de fuir basée sur la vitesse
+        const fleeChance = Math.min(0.8, this.state.playerStats.speed / (this.state.playerStats.speed + (this.state.enemy.agility || 20)));
         if (Math.random() < fleeChance) {
           this.state.phase = 'defeat'; // Techniquement pas une défaite mais on sort du combat
           return { ...turn, missed: false };
@@ -131,7 +142,7 @@ export class CombatSystem {
 
     switch (randomAction) {
       case 'attack':
-        turn.damage = this.calculateDamage(this.state.enemy.strength, this.state.playerStats.agility);
+        turn.damage = this.calculateEnemyDamage(this.state.enemy, this.state.playerStats);
         turn.critical = Math.random() < 0.05; // 5% chance critique pour l'ennemi
         turn.missed = Math.random() > action.accuracy;
         
@@ -156,13 +167,44 @@ export class CombatSystem {
     return turn;
   }
 
+  private calculateEnemyDamage(enemy: Enemy, player: PlayerStats): number {
+    // Calcul des dégâts ennemis vs défense du joueur
+    const baseDamage = Math.floor(enemy.strength * 1.5 + Math.random() * enemy.strength * 0.5);
+    const playerDefense = player.defense || Math.floor(player.vitality * 1.5);
+    return Math.max(1, baseDamage - Math.floor(playerDefense * 0.5));
+  }
+
+  private calculatePhysicalDamage(player: PlayerStats): number {
+    // Formule style Final Fantasy: Attaque - Défense ennemie
+    const baseDamage = player.attack || Math.floor(player.strength * 2);
+    const randomFactor = Math.random() * 0.3 + 0.85; // 85% à 115% des dégâts
+    const damage = Math.floor(baseDamage * randomFactor);
+    
+    // Appliquer la défense de l'ennemi (estimation)
+    const enemyDefense = Math.floor(this.state.enemy.level * 3 + 10);
+    return Math.max(1, damage - enemyDefense);
+  }
+
+  private calculateMagicalDamage(player: PlayerStats): number {
+    // Formule style Final Fantasy: Attaque Magique - Défense Magique ennemie
+    const baseDamage = player.magicAttack || Math.floor(player.magic * 2);
+    const randomFactor = Math.random() * 0.3 + 0.85; // 85% à 115% des dégâts
+    const damage = Math.floor(baseDamage * randomFactor);
+    
+    // Appliquer la défense magique de l'ennemi (estimation)
+    const enemyMagicDefense = Math.floor(this.state.enemy.level * 2 + 5);
+    return Math.max(1, damage - enemyMagicDefense);
+  }
+
   private calculateDamage(attackStat: number, defenseStat: number): number {
+    // Ancienne méthode pour les attaques ennemies
     const baseDamage = Math.floor(attackStat * 0.8 + Math.random() * attackStat * 0.4);
     const defense = Math.floor(defenseStat * 0.3);
     return Math.max(1, baseDamage - defense);
   }
 
   private calculateMagicDamage(wisdom: number): number {
+    // Ancienne méthode pour compatibilité
     return Math.floor(wisdom * 1.2 + Math.random() * wisdom * 0.6);
   }
 
@@ -184,7 +226,7 @@ export class CombatSystem {
   }
 
   public isPlayerTurn(): boolean {
-    return this.getCurrentActor() === 'player';
+    return this.state.phase === 'preparation' || this.getCurrentActor() === 'player';
   }
 
   public isCombatFinished(): boolean {

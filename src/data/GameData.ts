@@ -5,14 +5,27 @@ export const initialPlayerStats: PlayerStats = {
   level: 1,
   xp: 0,
   maxXp: 100,
-  strength: 10,
-  agility: 8,
-  wisdom: 12,
-  constitution: 9,
-  hp: 50,
-  maxHp: 50,
-  mp: 20,
-  maxMp: 20
+  // Stats principales (1-99 comme FF)
+  strength: 12,      // Force de base
+  magic: 8,          // Magie de base
+  vitality: 15,      // Vitalité de base
+  spirit: 10,        // Esprit de base
+  dexterity: 11,     // Dextérité de base
+  luck: 7,           // Chance de base
+  // Stats dérivées (calculées)
+  attack: 24,        // Force * 2
+  defense: 10,       // Vitalité / 1.5
+  magicAttack: 16,   // Magie * 2
+  magicDefense: 8,   // Esprit * 0.8
+  speed: 22,         // Dextérité * 2
+  hitRate: 95,       // Base 90 + dextérité/2
+  criticalRate: 3,   // Base 2 + chance/5
+  evadeRate: 5,      // Base 2 + dextérité/4
+  // Santé et mana (valeurs FF)
+  hp: 120,
+  maxHp: 120,
+  mp: 45,
+  maxMp: 45
 };
 
 export const enemies: Enemy[] = [
@@ -87,38 +100,7 @@ export const mapZones: MapZone[] = [
   }
 ];
 
-export const equipment: Equipment[] = [
-  {
-    id: 'wooden_sword',
-    name: 'Épée en Bois',
-    type: 'weapon',
-    strengthBonus: 2,
-    agilityBonus: 0,
-    wisdomBonus: 0,
-    constitutionBonus: 0,
-    sprite: '⚔️'
-  },
-  {
-    id: 'leather_armor',
-    name: 'Armure en Cuir',
-    type: 'armor',
-    strengthBonus: 0,
-    agilityBonus: 1,
-    wisdomBonus: 0,
-    constitutionBonus: 3,
-    sprite: '🛡️'
-  },
-  {
-    id: 'wisdom_ring',
-    name: 'Anneau de Sagesse',
-    type: 'accessory',
-    strengthBonus: 0,
-    agilityBonus: 0,
-    wisdomBonus: 5,
-    constitutionBonus: 0,
-    sprite: '💍'
-  }
-];
+// Ancienne section d'équipements supprimée - remplacée par basicEquipment
 
 export const consumableItems: ConsumableItem[] = [
   {
@@ -169,7 +151,7 @@ export const consumableItems: ConsumableItem[] = [
 ];
 
 export const initialInventory: Inventory = {
-  equipment: [equipment[0]], // Épée en bois par défaut
+  equipment: [], // Équipement vide par défaut (utilise basicEquipment maintenant)
   consumables: consumableItems,
   spells: [],
   maxSlots: 20
@@ -180,34 +162,34 @@ export const shopItems: ShopItem[] = [
   {
     id: 'iron-sword',
     name: 'Épée de Fer',
-    description: 'Une épée basique mais efficace',
-    price: 100,
+    description: 'Une épée basique mais efficace. +18 Attaque',
+    price: 150,
     category: 'weapon',
     rarity: 'common',
-    stats: { strength: 5 },
+    stats: { strength: 5, attack: 18 },
     sprite: '⚔️',
     levelRequired: 1
   },
   {
     id: 'steel-sword',
     name: 'Épée d\'Acier',
-    description: 'Une épée plus solide et tranchante',
-    price: 300,
+    description: 'Une épée plus solide et tranchante. +35 Attaque',
+    price: 450,
     category: 'weapon',
     rarity: 'rare',
-    stats: { strength: 12 },
+    stats: { strength: 12, dexterity: 2, attack: 35 },
     sprite: '🗡️',
     levelRequired: 5
   },
   {
     id: 'flame-sword',
     name: 'Épée de Flamme',
-    description: 'Une épée enchantée avec le pouvoir du feu',
-    price: 800,
+    description: 'Une épée enchantée avec le pouvoir du feu. +55 Attaque, +12 Att.Mag',
+    price: 1200,
     premiumPrice: 15,
     category: 'weapon',
     rarity: 'epic',
-    stats: { strength: 20, wisdom: 5 },
+    stats: { strength: 20, magic: 5, attack: 55, magicAttack: 12 },
     sprite: '🔥',
     levelRequired: 10
   },
@@ -215,22 +197,22 @@ export const shopItems: ShopItem[] = [
   {
     id: 'leather-armor',
     name: 'Armure de Cuir',
-    description: 'Protection basique mais flexible',
-    price: 80,
+    description: 'Protection basique mais flexible. +22 Défense',
+    price: 120,
     category: 'armor',
     rarity: 'common',
-    stats: { constitution: 3, agility: 2 },
+    stats: { vitality: 3, dexterity: 2, defense: 22, speed: 4 },
     sprite: '🛡️',
     levelRequired: 1
   },
   {
     id: 'chain-mail',
     name: 'Cotte de Mailles',
-    description: 'Armure métallique résistante',
-    price: 250,
+    description: 'Armure métallique résistante. +45 Défense',
+    price: 380,
     category: 'armor',
     rarity: 'rare',
-    stats: { constitution: 8, strength: 2 },
+    stats: { vitality: 8, strength: 2, defense: 45, hp: 35 },
     sprite: '🛡️',
     levelRequired: 4
   },
@@ -242,7 +224,7 @@ export const shopItems: ShopItem[] = [
     premiumPrice: 25,
     category: 'armor',
     rarity: 'legendary',
-    stats: { constitution: 15, strength: 5, wisdom: 3 },
+    stats: { vitality: 15, strength: 5, magic: 3, defense: 85, hp: 80 },
     sprite: '🐉',
     levelRequired: 15
   },
@@ -266,7 +248,7 @@ export const shopItems: ShopItem[] = [
     premiumPrice: 8,
     category: 'accessory',
     rarity: 'epic',
-    stats: { wisdom: 12, mp: 20 },
+    stats: { magic: 12, spirit: 8, magicAttack: 24, mp: 30 },
     sprite: '🔮',
     levelRequired: 6
   },
@@ -301,5 +283,206 @@ export const shopItems: ShopItem[] = [
     rarity: 'epic',
     sprite: '⭐',
     levelRequired: 1
+  }
+];
+
+// Équipements de base
+export const basicEquipment: Equipment[] = [
+  {
+    id: 'starter-sword',
+    name: 'Épée de Débutant',
+    type: 'weapon',
+    slot: 'weapon',
+    strengthBonus: 3,
+    magicBonus: 0,
+    vitalityBonus: 0,
+    spiritBonus: 0,
+    dexterityBonus: 1,
+    luckBonus: 0,
+    attackBonus: 12,
+    defenseBonus: 0,
+    magicAttackBonus: 0,
+    magicDefenseBonus: 0,
+    speedBonus: 2,
+    hitRateBonus: 5,
+    criticalRateBonus: 1,
+    evadeRateBonus: 0,
+    sprite: '⚔️',
+    rarity: 'common',
+    levelRequired: 1,
+    description: 'Une épée simple mais efficace pour débuter. +12 Attaque'
+  },
+  {
+    id: 'leather-helmet',
+    name: 'Casque de Cuir',
+    type: 'helmet',
+    slot: 'helmet',
+    strengthBonus: 0,
+    magicBonus: 0,
+    vitalityBonus: 2,
+    spiritBonus: 1,
+    dexterityBonus: 0,
+    luckBonus: 0,
+    attackBonus: 0,
+    defenseBonus: 8,
+    magicAttackBonus: 0,
+    magicDefenseBonus: 4,
+    speedBonus: 0,
+    hitRateBonus: 0,
+    criticalRateBonus: 0,
+    evadeRateBonus: 0,
+    hpBonus: 15,
+    sprite: '🪖',
+    rarity: 'common',
+    levelRequired: 1,
+    description: 'Protection basique pour la tête. +8 Défense, +15 PV'
+  },
+  {
+    id: 'basic-armor',
+    name: 'Armure de Cuir',
+    type: 'armor',
+    slot: 'armor',
+    strengthBonus: 0,
+    magicBonus: 0,
+    vitalityBonus: 4,
+    spiritBonus: 1,
+    dexterityBonus: -1,
+    luckBonus: 0,
+    attackBonus: 0,
+    defenseBonus: 18,
+    magicAttackBonus: 0,
+    magicDefenseBonus: 6,
+    speedBonus: -2,
+    hitRateBonus: 0,
+    criticalRateBonus: 0,
+    evadeRateBonus: -1,
+    hpBonus: 25,
+    sprite: '🛡️',
+    rarity: 'common',
+    levelRequired: 1,
+    description: 'Armure légère mais résistante. +18 Défense, +25 PV'
+  },
+  {
+    id: 'leather-boots',
+    name: 'Bottes de Cuir',
+    type: 'boots',
+    slot: 'boots',
+    strengthBonus: 0,
+    magicBonus: 0,
+    vitalityBonus: 1,
+    spiritBonus: 0,
+    dexterityBonus: 3,
+    luckBonus: 1,
+    attackBonus: 0,
+    defenseBonus: 3,
+    magicAttackBonus: 0,
+    magicDefenseBonus: 0,
+    speedBonus: 6,
+    hitRateBonus: 2,
+    criticalRateBonus: 0,
+    evadeRateBonus: 3,
+    hpBonus: 10,
+    sprite: '👢',
+    rarity: 'common',
+    levelRequired: 1,
+    description: 'Bottes confortables pour les aventures. +6 Vitesse, +3 Esquive'
+  },
+  {
+    id: 'cloth-gloves',
+    name: 'Gants de Tissu',
+    type: 'gloves',
+    slot: 'gloves',
+    strengthBonus: 1,
+    magicBonus: 0,
+    vitalityBonus: 0,
+    spiritBonus: 0,
+    dexterityBonus: 2,
+    luckBonus: 0,
+    attackBonus: 2,
+    defenseBonus: 2,
+    magicAttackBonus: 0,
+    magicDefenseBonus: 0,
+    speedBonus: 4,
+    hitRateBonus: 3,
+    criticalRateBonus: 0,
+    evadeRateBonus: 1,
+    sprite: '🧤',
+    rarity: 'common',
+    levelRequired: 1,
+    description: 'Gants légers pour une meilleure dextérité. +3 Précision'
+  },
+  {
+    id: 'bronze-ring',
+    name: 'Anneau de Bronze',
+    type: 'ring',
+    slot: 'ring1',
+    strengthBonus: 2,
+    magicBonus: 1,
+    vitalityBonus: 0,
+    spiritBonus: 0,
+    dexterityBonus: 0,
+    luckBonus: 1,
+    attackBonus: 4,
+    defenseBonus: 0,
+    magicAttackBonus: 2,
+    magicDefenseBonus: 0,
+    speedBonus: 0,
+    hitRateBonus: 0,
+    criticalRateBonus: 1,
+    evadeRateBonus: 0,
+    sprite: '💍',
+    rarity: 'common',
+    levelRequired: 1,
+    description: 'Un simple anneau de bronze. +4 Attaque, +1 Critique'
+  },
+  {
+    id: 'wooden-shield',
+    name: 'Bouclier de Bois',
+    type: 'shield',
+    slot: 'shield',
+    strengthBonus: 0,
+    magicBonus: 0,
+    vitalityBonus: 4,
+    spiritBonus: 0,
+    dexterityBonus: -1,
+    luckBonus: 0,
+    attackBonus: 0,
+    defenseBonus: 15,
+    magicAttackBonus: 0,
+    magicDefenseBonus: 5,
+    speedBonus: -2,
+    hitRateBonus: 0,
+    criticalRateBonus: 0,
+    evadeRateBonus: -2,
+    hpBonus: 20,
+    sprite: '🛡️',
+    rarity: 'common',
+    levelRequired: 1,
+    description: 'Bouclier basique en bois renforcé. +15 Défense, +20 PV'
+  },
+  {
+    id: 'magic-amulet',
+    name: 'Amulette Magique',
+    type: 'amulet',
+    slot: 'amulet',
+    strengthBonus: 0,
+    magicBonus: 4,
+    vitalityBonus: 0,
+    spiritBonus: 3,
+    dexterityBonus: 0,
+    luckBonus: 0,
+    attackBonus: 0,
+    defenseBonus: 0,
+    magicAttackBonus: 8,
+    magicDefenseBonus: 6,
+    speedBonus: 0,
+    hitRateBonus: 0,
+    criticalRateBonus: 0,
+    evadeRateBonus: 0,
+    mpBonus: 20,
+    sprite: '🔮',
+    rarity: 'rare',
+    levelRequired: 3,
+    description: 'Amulette qui augmente les capacités magiques. +8 Att.Mag, +20 PM'
   }
 ];

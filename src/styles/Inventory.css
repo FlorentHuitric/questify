@@ -1,0 +1,363 @@
+/* src/styles/Inventory.css */
+.inventory-container {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: white;
+  min-height: 100vh;
+}
+
+.inventory-panel {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.equipment-panel {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stats-panel {
+  flex: 0 0 300px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Grille d'inventaire */
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.inventory-slot {
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.inventory-slot:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.inventory-slot.has-item {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.inventory-item {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border: 2px solid transparent;
+  border-radius: 3px;
+  cursor: grab;
+}
+
+.inventory-item:active {
+  cursor: grabbing;
+}
+
+.item-sprite {
+  font-size: 24px;
+  pointer-events: none;
+}
+
+.item-quantity {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  font-size: 10px;
+  padding: 1px 3px;
+  border-radius: 2px;
+  line-height: 1;
+}
+
+.item-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.95);
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  white-space: nowrap;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  margin-bottom: 5px;
+}
+
+.inventory-item:hover .item-tooltip {
+  opacity: 1;
+}
+
+.item-name {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.item-description {
+  font-size: 12px;
+  color: #ccc;
+  margin-bottom: 5px;
+}
+
+.item-stats {
+  font-size: 11px;
+  color: #8fbc8f;
+}
+
+.item-rarity {
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-top: 5px;
+}
+
+/* Emplacements d'équipement */
+.equipment-slots {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.character-model {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.avatar {
+  font-size: 80px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  padding: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.equipment-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.equipment-row {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.equipment-slot {
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.equipment-slot:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.equipment-slot.has-item {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.slot-label {
+  position: absolute;
+  bottom: -20px;
+  font-size: 10px;
+  color: #ccc;
+  white-space: nowrap;
+}
+
+.equipped-item {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid transparent;
+  border-radius: 3px;
+  position: relative;
+}
+
+.empty-slot {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+}
+
+.slot-icon {
+  font-size: 24px;
+}
+
+/* Panneau de statistiques */
+.stats-section {
+  margin-bottom: 20px;
+}
+
+.stats-section h3 {
+  margin-bottom: 10px;
+  color: #ffd700;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+  padding-bottom: 5px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-label {
+  color: #ccc;
+}
+
+.stat-value {
+  font-weight: bold;
+  color: white;
+}
+
+.stat-bonus {
+  color: #8fbc8f;
+  font-size: 12px;
+  margin-left: 5px;
+}
+
+.hp-mp-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.stat-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stat-bar label {
+  min-width: 30px;
+  font-size: 12px;
+  color: #ccc;
+}
+
+.bar {
+  flex: 1;
+  height: 16px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.bar-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.hp-bar .bar-fill {
+  background: linear-gradient(90deg, #ff4444, #ff6666);
+}
+
+.mp-bar .bar-fill {
+  background: linear-gradient(90deg, #4444ff, #6666ff);
+}
+
+.bar span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.inventory-container {
+  animation: slideIn 0.5s ease;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .inventory-container {
+    flex-direction: column;
+    padding: 10px;
+  }
+  
+  .inventory-grid {
+    grid-template-columns: repeat(8, 1fr);
+  }
+  
+  .equipment-row {
+    gap: 10px;
+  }
+  
+  .equipment-slot {
+    width: 50px;
+    height: 50px;
+  }
+}

@@ -1,0 +1,200 @@
+/* src/styles/CombatTimeline.css */
+.combat-timeline {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 2px solid #4a5568;
+  border-radius: 12px;
+  padding: 1rem;
+  margin: 1rem 0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.combat-timeline h3 {
+  color: #e2e8f0;
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.timeline-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #4a5568 #2d3748;
+}
+
+.timeline-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.timeline-container::-webkit-scrollbar-track {
+  background: #2d3748;
+  border-radius: 3px;
+}
+
+.timeline-container::-webkit-scrollbar-thumb {
+  background: #4a5568;
+  border-radius: 3px;
+}
+
+.timeline-turn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  position: relative;
+  border: 1px solid transparent;
+}
+
+.timeline-turn.player {
+  background: linear-gradient(90deg, #2b6cb8 0%, #1e4a73 100%);
+  border-left: 4px solid #3182ce;
+}
+
+.timeline-turn.enemy {
+  background: linear-gradient(90deg, #c53030 0%, #822727 100%);
+  border-left: 4px solid #e53e3e;
+}
+
+.timeline-turn.current {
+  transform: scale(1.02);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  border-color: #ffd700;
+  animation: currentTurnPulse 2s ease-in-out infinite;
+}
+
+@keyframes currentTurnPulse {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  }
+  50% { 
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+  }
+}
+
+.turn-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.turn-icon {
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+}
+
+.turn-name {
+  color: #e2e8f0;
+  font-weight: 500;
+  font-size: 0.9rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.current-turn-highlight {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.current-turn-highlight span {
+  background: linear-gradient(45deg, #ffd700, #ffed4e);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: bold;
+  font-size: 0.8rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.timeline-explanation {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #4a5568;
+}
+
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #a0aec0;
+  font-size: 0.8rem;
+}
+
+.legend-icon {
+  font-size: 1rem;
+  padding: 0.2rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.legend-icon.player {
+  background: linear-gradient(45deg, #3182ce, #2b6cb8);
+}
+
+.legend-icon.enemy {
+  background: linear-gradient(45deg, #e53e3e, #c53030);
+}
+
+.speed-info {
+  text-align: center;
+  color: #718096;
+  font-size: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.speed-info small {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .combat-timeline {
+    padding: 0.75rem;
+  }
+  
+  .timeline-container {
+    max-height: 250px;
+  }
+  
+  .legend {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .legend-item {
+    justify-content: center;
+  }
+  
+  .turn-name {
+    font-size: 0.8rem;
+  }
+  
+  .turn-icon {
+    width: 25px;
+    height: 25px;
+    font-size: 1rem;
+  }
+}
