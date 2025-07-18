@@ -89,13 +89,14 @@ const CharacterCreation: React.FC = () => {
     // On part des stats principales, on complète avec le reste par défaut
     return calculateDerivedStats({
       ...arch.baseStats,
-      level: 1,
+      level: 5, // Pour affichage preview sphérier
       xp: 0,
       maxXp: 100,
       hp: 0,
       maxHp: 0,
       mp: 0,
       maxMp: 0,
+      archetype: arch.id // Pour scaling
     });
   };
 
@@ -105,7 +106,7 @@ const CharacterCreation: React.FC = () => {
       startNewGame(playerName, {
         baseStats: {
           ...selectedArchetype.baseStats,
-          level: 1,
+          level: 1, // Commence au niveau 1
           xp: 0,
           maxXp: 100,
           hp: 0,

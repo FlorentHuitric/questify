@@ -1,5 +1,6 @@
 // src/pages/Profile.tsx
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGame } from '../contexts/GameContext';
 import { Equipment, ConsumableItem, EquipmentSlots, PlayerStats } from '../types/GameTypes';
 import InventoryGrid from '../components/InventoryGrid';
@@ -21,6 +22,7 @@ const Profile: React.FC = () => {
     playerAvatar,
     getTotalStats
   } = useGame();
+  const navigate = useNavigate();
 
   // Debug: Afficher les stats du joueur
   console.log('PlayerStats dans Profile:', playerStats);
@@ -298,6 +300,31 @@ const Profile: React.FC = () => {
           </div>
         </div>
       </div>
+      {/* Sphérier access button (level 5+) */}
+      {playerStats.level >= 5 ? (
+        <button
+          className="profile-spheregrid-btn"
+          style={{
+            marginTop: 24,
+            background: '#F1C40F',
+            color: '#232946',
+            border: 'none',
+            borderRadius: 10,
+            fontFamily: 'Press Start 2P, cursive',
+            fontSize: '1rem',
+            padding: '12px 32px',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+          }}
+          onClick={() => navigate('/spheregrid')}
+        >
+          Accéder au Sphérier
+        </button>
+      ) : (
+        <div style={{ marginTop: 24, color: '#aaa', fontStyle: 'italic' }}>
+          <span>Le sphérier sera accessible au niveau 5.</span>
+        </div>
+      )}
 
       <div className="equipment-panel">
         <h3>⚔️ Équipement</h3>

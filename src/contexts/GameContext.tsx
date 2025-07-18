@@ -1,7 +1,17 @@
+
+
+
+
+
+
+
+
+
 // src/contexts/GameContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { PlayerStats, ConsumableItem, Equipment, Enemy, Currency, EquipmentSlots } from '../types/GameTypes';
 import { initialPlayerStats, consumableItems, shopItems, basicEquipment } from '../data/GameData';
+import { sphereGrid, SphereNode } from '../data/SphereGrid';
 
 interface GameContextType {
   playerStats: PlayerStats;
@@ -30,6 +40,14 @@ interface GameContextType {
   calculateDerivedStats: (stats: PlayerStats) => PlayerStats;
   playerName: string;
   playerAvatar: string;
+  sphereNodesUnlocked: string[];
+  pc: number;
+  gainPC: (amount: number) => void;
+  unlockSphereNode: (nodeId: string) => boolean;
+  showLevelUpModal: boolean;
+  oldLevelStats: PlayerStats | null;
+  newLevelStats: PlayerStats | null;
+  closeLevelUpModal: () => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -47,6 +65,27 @@ interface GameProviderProps {
 }
 
 export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
+  // Sphérier : PC et nœuds débloqués
+
+  // Gagner des PC
+  const gainPC = (amount: number) => setPC((pc: number) => pc + amount);
+
+  // Débloquer un nœud du sphérier
+  const unlockSphereNode = (nodeId: string): boolean => {
+    const node = sphereGrid.find((n: SphereNode) => n.id === nodeId);
+    if (!node) return false;
+    if (sphereNodesUnlocked.includes(nodeId)) return false;
+    // Vérifie qu'un voisin est déjà débloqué
+    const canUnlock = node.neighbors.some((n: string) => sphereNodesUnlocked.includes(n));
+    if (!canUnlock) return false;
+    if (pc < node.cost) return false;
+    setSphereNodesUnlocked(prev => [...prev, nodeId]);
+    setPC(prev => prev - node.cost);
+    return true;
+  };
+  // Sphérier : PC et nœuds débloqués
+  const [pc, setPC] = useState(0);
+  const [sphereNodesUnlocked, setSphereNodesUnlocked] = useState<string[]>([]);
   const [playerName, setPlayerName] = useState<string>('');
   const [playerAvatar, setPlayerAvatar] = useState<string>('');
 
@@ -55,7 +94,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     // Calculer les stats dérivées à partir des stats principales
     const fullStats = calculateDerivedStats({
       ...archetype.baseStats,
-      level: 1,
+      level: archetype.baseStats.level || 1,
       xp: 0,
       maxXp: 100,
       hp: 0,
@@ -70,6 +109,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       hitRate: 0,
       criticalRate: 0,
       evadeRate: 0,
+      archetype: archetype.id || ''
     });
     setPlayerStats(fullStats);
     setInventory(consumableItems);
@@ -95,6 +135,26 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     console.log('[startNewGame] playerName:', name, 'archetype:', archetype.id, 'avatar:', avatar);
     setPlayerAvatar(avatar);
     setPlayerName(name);
+    // Initialise le sphérier : zone de départ selon archétype
+    const startNode = sphereGrid.find((n: SphereNode) => n.archStart === archetype.id)?.id;
+    setSphereNodesUnlocked(startNode ? [startNode] : []);
+    setPC(0);
+  // Gagner des PC
+  const gainPC = (amount: number) => setPC((pc: number) => pc + amount);
+
+  // Débloquer un nœud du sphérier
+  const unlockSphereNode = (nodeId: string): boolean => {
+    const node = sphereGrid.find((n: SphereNode) => n.id === nodeId);
+    if (!node) return false;
+    if (sphereNodesUnlocked.includes(nodeId)) return false;
+    // Vérifie qu'un voisin est déjà débloqué
+    const canUnlock = node.neighbors.some((n: string) => sphereNodesUnlocked.includes(n));
+    if (!canUnlock) return false;
+    if (pc < node.cost) return false;
+    setSphereNodesUnlocked(prev => [...prev, nodeId]);
+    setPC(prev => prev - node.cost);
+    return true;
+  };
     // On force la sauvegarde après que les states sont bien mis à jour
     setTimeout(() => {
       saveGame();
@@ -106,7 +166,29 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
     }, 50);
   };
-  const [playerStats, setPlayerStats] = useState<PlayerStats>(initialPlayerStats);
+  const [playerStats, _setPlayerStats] = useState<PlayerStats>(initialPlayerStats);
+  const [showLevelUpModal, setShowLevelUpModal] = useState(false);
+  const [oldLevelStats, setOldLevelStats] = useState<PlayerStats | null>(null);
+  const [newLevelStats, setNewLevelStats] = useState<PlayerStats | null>(null);
+
+  // Custom setter to detect level up
+  const setPlayerStats = (updater: PlayerStats | ((prev: PlayerStats) => PlayerStats)) => {
+    _setPlayerStats(prev => {
+      const next = typeof updater === 'function' ? (updater as (prev: PlayerStats) => PlayerStats)(prev) : updater;
+      if (next.level > prev.level) {
+        setOldLevelStats(prev);
+        setNewLevelStats(next);
+        setShowLevelUpModal(true);
+      }
+      return next;
+    });
+  };
+
+  const closeLevelUpModal = () => {
+    setShowLevelUpModal(false);
+    setOldLevelStats(null);
+    setNewLevelStats(null);
+  };
   const [inventory, setInventory] = useState<ConsumableItem[]>(consumableItems);
   const [equipment, setEquipment] = useState<Equipment[]>(basicEquipment);
   const [equippedItems, setEquippedItems] = useState<EquipmentSlots>({});
@@ -117,15 +199,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   useEffect(() => {
     if (!isLoaded) {
       const savedData = localStorage.getItem('questify_save');
-      if (!savedData) {
-        // Redirige vers la création de personnage si aucune sauvegarde
-        if (window.location.pathname !== '/character-creation') {
-          window.location.href = '/character-creation';
-        }
-      } else {
+      if (savedData) {
         loadGame();
         setIsLoaded(true);
       }
+      // Sinon, on laisse l'app router gérer la redirection (voir Dashboard)
     }
   }, [isLoaded]);
 
@@ -362,49 +440,109 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     });
   };
 
-  const calculateDerivedStats = (stats: PlayerStats): PlayerStats => {
+  const calculateDerivedStats = (stats: PlayerStats & { archetype?: string }): PlayerStats => {
     // S'assurer que toutes les stats de base sont définies
     const safeStats = {
       ...initialPlayerStats, // Commencer avec les stats par défaut
       ...stats, // Puis appliquer les stats passées en paramètre
     };
-    
-    const newStats = { ...safeStats };
-    
-    console.log('Stats d\'entrée:', stats);
-    console.log('Stats sécurisées:', safeStats);
-    
+
+    // Détection archétype (pour scaling)
+    let arch: string = '';
+    if ('archetype' in safeStats && typeof (safeStats as any).archetype === 'string') {
+      arch = (safeStats as any).archetype;
+    } else if ((window as any).lastArchetypeId) {
+      arch = (window as any).lastArchetypeId;
+    }
+
+    // Toujours partir des stats de base niveau 1 transmises (baseStats), sinon fallback sur safeStats
+    let baseStats = (safeStats as any).baseStats || {
+      strength: safeStats.strength,
+      magic: safeStats.magic,
+      vitality: safeStats.vitality,
+      spirit: safeStats.spirit,
+      dexterity: safeStats.dexterity,
+      luck: safeStats.luck,
+    };
+
+    // Par défaut, scaling par archétype
+    const level = safeStats.level || 1;
+    let strength = baseStats.strength;
+    let magic = baseStats.magic;
+    let vitality = baseStats.vitality;
+    let spirit = baseStats.spirit;
+    let dexterity = baseStats.dexterity;
+    let luck = baseStats.luck;
+
+    // Appliquer une progression simple selon archétype
+    if (arch === 'warrior') {
+      strength += (level - 1) * 2;
+      vitality += (level - 1) * 2;
+      magic += (level - 1) * 1;
+      spirit += (level - 1) * 1;
+      dexterity += (level - 1) * 1;
+      luck += (level - 1) * 1;
+    } else if (arch === 'mage') {
+      magic += (level - 1) * 2;
+      spirit += (level - 1) * 2;
+      strength += (level - 1) * 1;
+      vitality += (level - 1) * 1;
+      dexterity += (level - 1) * 1;
+      luck += (level - 1) * 1;
+    } else if (arch === 'thief') {
+      dexterity += (level - 1) * 2;
+      luck += (level - 1) * 2;
+      strength += (level - 1) * 1;
+      vitality += (level - 1) * 1;
+      magic += (level - 1) * 1;
+      spirit += (level - 1) * 1;
+    } else {
+      // Par défaut, scaling équilibré
+      strength += (level - 1) * 1;
+      magic += (level - 1) * 1;
+      vitality += (level - 1) * 1;
+      spirit += (level - 1) * 1;
+      dexterity += (level - 1) * 1;
+      luck += (level - 1) * 1;
+    }
+
+    const newStats = {
+      ...safeStats,
+      strength,
+      magic,
+      vitality,
+      spirit,
+      dexterity,
+      luck,
+    };
+
     // Calculer les stats dérivées comme dans Final Fantasy
-    newStats.attack = Math.floor(safeStats.strength * 2 + safeStats.dexterity * 0.5);
-    newStats.defense = Math.floor(safeStats.vitality * 1.5 + safeStats.strength * 0.2);
-    newStats.magicAttack = Math.floor(safeStats.magic * 2 + safeStats.spirit * 0.5);
-    newStats.magicDefense = Math.floor(safeStats.spirit * 1.2 + safeStats.magic * 0.3);
-    newStats.speed = Math.floor(safeStats.dexterity * 2 + safeStats.luck * 0.3);
-    newStats.hitRate = Math.floor(90 + safeStats.dexterity * 0.5 + safeStats.luck * 0.2);
-    newStats.criticalRate = Math.floor(2 + safeStats.luck * 0.3 + safeStats.dexterity * 0.1);
-    newStats.evadeRate = Math.floor(2 + safeStats.dexterity * 0.3 + safeStats.luck * 0.4);
-    
-    // Calculer HP et MP maximaux seulement s'ils ne sont pas déjà définis
-    if (!newStats.maxHp || newStats.maxHp < 100) {
-      newStats.maxHp = Math.floor(100 + safeStats.vitality * 8 + safeStats.level * 10);
-    }
-    if (!newStats.maxMp || newStats.maxMp < 20) {
-      newStats.maxMp = Math.floor(20 + safeStats.spirit * 4 + safeStats.magic * 2 + safeStats.level * 3);
-    }
-    
+    newStats.attack = Math.floor(newStats.strength * 2 + newStats.dexterity * 0.5);
+    newStats.defense = Math.floor(newStats.vitality * 1.5 + newStats.strength * 0.2);
+    newStats.magicAttack = Math.floor(newStats.magic * 2 + newStats.spirit * 0.5);
+    newStats.magicDefense = Math.floor(newStats.spirit * 1.2 + newStats.magic * 0.3);
+    newStats.speed = Math.floor(newStats.dexterity * 2 + newStats.luck * 0.3);
+    newStats.hitRate = Math.floor(90 + newStats.dexterity * 0.5 + newStats.luck * 0.2);
+    newStats.criticalRate = Math.floor(2 + newStats.luck * 0.3 + newStats.dexterity * 0.1);
+    newStats.evadeRate = Math.floor(2 + newStats.dexterity * 0.3 + newStats.luck * 0.4);
+
+    // Calculer HP et MP maximaux
+    newStats.maxHp = Math.floor(100 + newStats.vitality * 8 + level * 10);
+    newStats.maxMp = Math.floor(20 + newStats.spirit * 4 + newStats.magic * 2 + level * 3);
+
     // S'assurer que les HP et MP actuels sont valides
     if (!newStats.hp || newStats.hp <= 0) {
       newStats.hp = newStats.maxHp;
     } else {
       newStats.hp = Math.min(newStats.hp, newStats.maxHp);
     }
-    
+
     if (!newStats.mp || newStats.mp <= 0) {
       newStats.mp = newStats.maxMp;
     } else {
       newStats.mp = Math.min(newStats.mp, newStats.maxMp);
     }
-    
+
     console.log('Stats calculées:', newStats);
     return newStats;
   };
@@ -530,6 +668,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     localStorage.removeItem('questify_save');
   };
 
+  // -- méthodes sphérier doivent être déclarées avant value --
   const value: GameContextType = {
     playerStats,
     inventory,
@@ -556,8 +695,34 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     startNewGame,
     calculateDerivedStats,
     playerName,
-    playerAvatar
+    playerAvatar,
+    sphereNodesUnlocked,
+    pc,
+    gainPC,
+    unlockSphereNode,
+    showLevelUpModal,
+    oldLevelStats,
+    newLevelStats,
+    closeLevelUpModal
   };
+
+
+  // Helper pour debug : simuler un gain de niveau depuis la console
+  React.useEffect(() => {
+    (window as any).simulateLevelUp = () => {
+      setPlayerStats((prev: any) => {
+        const newLevel = prev.level + 1;
+        const newStats = calculateDerivedStats({
+          ...prev,
+          level: newLevel,
+          xp: 0,
+          maxXp: newLevel * 100,
+        });
+        return newStats;
+      });
+      // (Plus d'alert, la modale RPG s'affichera automatiquement)
+    };
+  }, [setPlayerStats, calculateDerivedStats]);
 
   return (
     <GameContext.Provider value={value}>
