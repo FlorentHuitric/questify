@@ -26,6 +26,10 @@ interface GameContextType {
   equipItem: (item: Equipment, slot: keyof EquipmentSlots) => void;
   unequipItem: (slot: keyof EquipmentSlots) => void;
   buyItem: (itemId: string, cost: number, currencyType: 'gold' | 'gems') => boolean;
+  startNewGame: (playerName: string, archetype: { baseStats: PlayerStats, id?: string }) => void;
+  calculateDerivedStats: (stats: PlayerStats) => PlayerStats;
+  playerName: string;
+  playerAvatar: string;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -43,6 +47,65 @@ interface GameProviderProps {
 }
 
 export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
+  const [playerName, setPlayerName] = useState<string>('');
+  const [playerAvatar, setPlayerAvatar] = useState<string>('');
+
+  // Nouvelle partie : initialise le joueur avec un archétype et un nom
+  const startNewGame = (name: string, archetype: { baseStats: PlayerStats, id?: string }) => {
+    // Calculer les stats dérivées à partir des stats principales
+    const fullStats = calculateDerivedStats({
+      ...archetype.baseStats,
+      level: 1,
+      xp: 0,
+      maxXp: 100,
+      hp: 0,
+      maxHp: 0,
+      mp: 0,
+      maxMp: 0,
+      attack: 0,
+      defense: 0,
+      magicAttack: 0,
+      magicDefense: 0,
+      speed: 0,
+      hitRate: 0,
+      criticalRate: 0,
+      evadeRate: 0,
+    });
+    setPlayerStats(fullStats);
+    setInventory(consumableItems);
+    setEquipment(basicEquipment);
+    setEquippedItems({});
+    setCurrency({ gold: 100, gems: 0 });
+    setPlayerName(name);
+    // Avatar selon l'archétype (import dynamique compatible Vite)
+    let avatar = '';
+    switch (archetype.id) {
+      case 'warrior':
+        avatar = new URL('../assets/avatar-warrior.png', import.meta.url).href;
+        break;
+      case 'mage':
+        avatar = new URL('../assets/avatar-mage.png', import.meta.url).href;
+        break;
+      case 'thief':
+        avatar = new URL('../assets/avatar-thief.png', import.meta.url).href;
+        break;
+      default:
+        avatar = new URL('../assets/avatar.png', import.meta.url).href;
+    }
+    console.log('[startNewGame] playerName:', name, 'archetype:', archetype.id, 'avatar:', avatar);
+    setPlayerAvatar(avatar);
+    setPlayerName(name);
+    // On force la sauvegarde après que les states sont bien mis à jour
+    setTimeout(() => {
+      saveGame();
+      // Debug : log la sauvegarde juste après
+      const debugSave = localStorage.getItem('questify_save');
+      if (debugSave) {
+        const parsed = JSON.parse(debugSave);
+        console.log('[DEBUG SAVE]', parsed);
+      }
+    }, 50);
+  };
   const [playerStats, setPlayerStats] = useState<PlayerStats>(initialPlayerStats);
   const [inventory, setInventory] = useState<ConsumableItem[]>(consumableItems);
   const [equipment, setEquipment] = useState<Equipment[]>(basicEquipment);
@@ -53,21 +116,35 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   // Charger les données sauvegardées au démarrage - une seule fois
   useEffect(() => {
     if (!isLoaded) {
-      loadGame();
-      setIsLoaded(true);
+      const savedData = localStorage.getItem('questify_save');
+      if (!savedData) {
+        // Redirige vers la création de personnage si aucune sauvegarde
+        if (window.location.pathname !== '/character-creation') {
+          window.location.href = '/character-creation';
+        }
+      } else {
+        loadGame();
+        setIsLoaded(true);
+      }
     }
   }, [isLoaded]);
 
-  // Sauvegarder automatiquement
+  // Sauvegarder automatiquement toutes les 30s
   useEffect(() => {
     if (isLoaded) {
       const autoSave = setInterval(() => {
         saveGame();
-      }, 30000); // Sauvegarde toutes les 30 secondes
-
+      }, 30000);
       return () => clearInterval(autoSave);
     }
-  }, [isLoaded]); // Seulement quand les données sont chargées
+  }, [isLoaded]);
+
+  // Sauvegarde immédiate quand le nom ou l'avatar changent
+  useEffect(() => {
+    if (isLoaded && playerName && playerAvatar) {
+      saveGame();
+    }
+  }, [playerName, playerAvatar, isLoaded]);
 
   const updatePlayerStats = (stats: Partial<PlayerStats>) => {
     setPlayerStats(prev => ({ ...prev, ...stats }));
@@ -413,6 +490,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       equipment,
       equippedItems,
       currency,
+      playerAvatar,
+      playerName,
       timestamp: Date.now()
     };
     localStorage.setItem('questify_save', JSON.stringify(gameData));
@@ -429,6 +508,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         setEquipment(gameData.equipment || basicEquipment);
         setEquippedItems(gameData.equippedItems || {});
         setCurrency(gameData.currency || { gold: 100, gems: 0 });
+        if (gameData.playerAvatar) setPlayerAvatar(gameData.playerAvatar);
+        if (gameData.playerName) setPlayerName(gameData.playerName);
       } catch (error) {
         console.error('Erreur lors du chargement de la sauvegarde:', error);
         // En cas d'erreur, réinitialiser avec les valeurs par défaut
@@ -471,7 +552,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     getEnemyDrops,
     equipItem,
     unequipItem,
-    buyItem
+    buyItem,
+    startNewGame,
+    calculateDerivedStats,
+    playerName,
+    playerAvatar
   };
 
   return (

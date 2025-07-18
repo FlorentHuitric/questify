@@ -1,18 +1,26 @@
 // src/pages/Dashboard.tsx
+
 import React from 'react';
+import { useGame } from '../contexts/GameContext';
 import '../styles/Dashboard.css';
 
+
 const Dashboard: React.FC = () => {
+  const { playerName, playerAvatar, getTotalStats } = useGame();
+  const playerStats = getTotalStats();
+  // Affiche une erreur explicite si playerAvatar est vide
+  if (!playerAvatar) {
+    return <div style={{color: 'red', padding: 40}}>Erreur : playerAvatar n'est pas défini dans le contexte. Crée un nouveau personnage ou vérifie la logique d'initialisation.</div>;
+  }
   return (
     <div className="dashboard-container">
       <div className="avatar-stats">
         <div className="avatar">
-          {/* Remplacez le chemin par l'importation d'asset ou gardez l'URL relative */}
-          <img src="/src/assets/avatar.png" alt="Avatar" />
+          <img src={playerAvatar} alt="Avatar" />
         </div>
         <div className="stats">
-          <h2 className="title">Niveau 5</h2>
-          <p>XP: 120/200</p>
+          <h2 className="title">{playerName ? playerName : 'Aventurier'} (Niveau {playerStats?.level ?? 1})</h2>
+          <p>XP: {playerStats?.xp ?? 0}/{playerStats?.maxXp ?? 100}</p>
         </div>
       </div>
       <div className="notifications">

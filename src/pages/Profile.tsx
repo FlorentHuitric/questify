@@ -7,6 +7,7 @@ import EquipmentSlotsComponent from '../components/EquipmentSlots';
 import '../styles/Profile.css';
 import '../styles/Inventory.css';
 
+
 const Profile: React.FC = () => {
   const { 
     playerStats, 
@@ -15,7 +16,10 @@ const Profile: React.FC = () => {
     gold, 
     crystals,
     equipItem,
-    unequipItem
+    unequipItem,
+    playerName,
+    playerAvatar,
+    getTotalStats
   } = useGame();
 
   // Debug: Afficher les stats du joueur
@@ -41,34 +45,9 @@ const Profile: React.FC = () => {
     unequipItem(slot);
   };
 
-  const calculateTotalStats = () => {
-    let totalStats = { ...playerStats };
-    
-    Object.values(equippedItems).forEach(item => {
-      if (item) {
-        totalStats.strength += item.strengthBonus;
-        totalStats.magic += item.magicBonus;
-        totalStats.vitality += item.vitalityBonus;
-        totalStats.spirit += item.spiritBonus;
-        totalStats.dexterity += item.dexterityBonus;
-        totalStats.luck += item.luckBonus;
-        totalStats.attack += item.attackBonus;
-        totalStats.defense += item.defenseBonus;
-        totalStats.magicAttack += item.magicAttackBonus;
-        totalStats.magicDefense += item.magicDefenseBonus;
-        totalStats.speed += item.speedBonus;
-        totalStats.hitRate += item.hitRateBonus;
-        totalStats.criticalRate += item.criticalRateBonus;
-        totalStats.evadeRate += item.evadeRateBonus;
-        if (item.hpBonus) totalStats.maxHp += item.hpBonus;
-        if (item.mpBonus) totalStats.maxMp += item.mpBonus;
-      }
-    });
-    
-    return totalStats;
-  };
 
-  const totalStats = calculateTotalStats();
+  // Utilise la fonction du contexte pour avoir les stats finales (bonus inclus)
+  const totalStats = getTotalStats();
 
   const getEquipmentBonus = (stat: keyof PlayerStats) => {
     let bonus = 0;
@@ -135,15 +114,18 @@ const Profile: React.FC = () => {
   return (
     <div className="inventory-container">
       <div className="stats-panel">
-        <div className="stats-section">
-          <h3>🧙‍♂️ Personnage</h3>
-          <div className="stat-item">
-            <span className="stat-label">Niveau</span>
-            <span className="stat-value">{playerStats.level}</span>
+        <div className="profile-header" style={{ display: 'flex', alignItems: 'center', marginBottom: 24 }}>
+          <div className="avatar" style={{ marginRight: 18 }}>
+            {playerAvatar ? (
+              <img src={playerAvatar} alt="Avatar" style={{ width: 80, height: 80, borderRadius: 12, border: '3px solid #F1C40F' }} />
+            ) : (
+              <div style={{color: 'red', padding: 20}}>Avatar non défini</div>
+            )}
           </div>
-          <div className="stat-item">
-            <span className="stat-label">XP</span>
-            <span className="stat-value">{playerStats.xp} / {playerStats.maxXp}</span>
+          <div className="info">
+            <h2 style={{ color: '#F1C40F', fontFamily: 'Press Start 2P, cursive', margin: 0 }}>{playerName ? playerName : 'Aventurier'}</h2>
+            <div style={{ fontSize: 16, color: '#fff', marginTop: 6 }}>Niveau {playerStats.level}</div>
+            <div style={{ fontSize: 14, color: '#fff' }}>XP : {playerStats.xp} / {playerStats.maxXp}</div>
           </div>
         </div>
 
