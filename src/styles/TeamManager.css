@@ -1,0 +1,11 @@
+.team-manager { margin: 32px 0; }
+.team-slots { display: flex; gap: 18px; margin-bottom: 24px; }
+.team-slot { background: #222; border-radius: 10px; min-width: 120px; min-height: 120px; display: flex; align-items: center; justify-content: center; border: 2px dashed #F1C40F; }
+.team-slot.filled { border: 2px solid #F1C40F; }
+.team-char, .collection-char { background: #181818; border-radius: 8px; padding: 10px 14px; text-align: center; box-shadow: 0 2px 8px #000a; font-size: 1rem; cursor: grab; margin: 2px; }
+.char-sprite { font-size: 2rem; display: block; }
+.char-name { color: #F1C40F; font-weight: bold; display: block; }
+.char-level { font-size: 0.9rem; color: #27AE60; display: block; }
+.char-rarity { font-size: 0.8rem; color: #aaa; display: block; }
+.empty-slot { color: #aaa; font-size: 0.9rem; }
+.collection-list { display: flex; flex-wrap: wrap; gap: 12px; }

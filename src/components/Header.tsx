@@ -36,6 +36,7 @@ const Header: React.FC = () => {
         <Link to="/map" onClick={() => setMenuActive(false)}>🗺️ Carte</Link>
         <Link to="/shop" onClick={() => setMenuActive(false)}>🏪 Boutique</Link>
         <Link to="/profile" onClick={() => setMenuActive(false)}>👤 Profil</Link>
+        <Link to="/gatcha" onClick={() => setMenuActive(false)}>🎲 Gatcha</Link>
       </nav>
     </header>
   );

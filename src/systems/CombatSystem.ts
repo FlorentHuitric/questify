@@ -1,80 +1,109 @@
 // src/systems/CombatSystem.ts
 import { PlayerStats, Enemy, CombatState, CombatAction, CombatTurn } from '../types/GameTypes';
+import { GatchaCharacter } from '../types/GatchaTypes';
 
 export class CombatSystem {
-  private state: CombatState;
+  private state: CombatState & {
+    allies: GatchaCharacter[];
+    activeAllyIndex: number;
+  };
 
-  constructor(player: PlayerStats, enemy: Enemy) {
+  constructor(allies: GatchaCharacter[], enemy: Enemy) {
     this.state = {
       phase: 'preparation',
-      playerStats: { ...player },
+      // Pour compatibilité, on garde playerStats = stats du premier allié
+      playerStats: { ...this.gatchaToPlayerStats(allies[0]) },
       enemy: { ...enemy },
-      turnOrder: this.calculateTurnOrder(player, enemy),
+      turnOrder: this.calculateTurnOrder(allies, enemy),
       currentTurn: 0,
       combatLog: [],
       playerDefending: false,
-      enemyDefending: false
+      enemyDefending: false,
+      allies: allies.map(a => ({ ...a })),
+      activeAllyIndex: 0,
     };
   }
 
-  private calculateTurnOrder(player: PlayerStats, enemy: Enemy): ('player' | 'enemy')[] {
-    // Système inspiré de Final Fantasy X avec CT (Charge Time)
-    const playerSpeed = player.speed || player.dexterity * 2;
-    const enemySpeed = enemy.agility || 20;
-    
-    const order: ('player' | 'enemy')[] = [];
-    let playerCT = 0;
-    let enemyCT = 0;
-    
-    // Simuler plus de tours pour avoir une meilleure prédiction
+  // Convertit un GatchaCharacter en PlayerStats pour compatibilité
+  private gatchaToPlayerStats(char: GatchaCharacter): PlayerStats {
+    return {
+      level: char.level,
+      xp: char.xp,
+      maxXp: char.maxXp,
+      strength: char.baseStats.attack, // mapping simplifié
+      magic: char.baseStats.magic,
+      vitality: char.baseStats.defense,
+      spirit: 10, // à adapter si besoin
+      dexterity: char.baseStats.speed,
+      luck: 10, // à adapter si besoin
+      attack: char.baseStats.attack,
+      defense: char.baseStats.defense,
+      magicAttack: char.baseStats.magic,
+      magicDefense: 10, // à adapter
+      speed: char.baseStats.speed,
+      hitRate: 95,
+      criticalRate: 5,
+      evadeRate: 5,
+      hp: char.baseStats.hp,
+      maxHp: char.baseStats.hp,
+      mp: 30,
+      maxMp: 30,
+    };
+  }
+
+  private calculateTurnOrder(allies: GatchaCharacter[], enemy: Enemy): (string | 'enemy')[] {
+    // Timeline FFX : chaque allié et l'ennemi ont leur propre CT
+    const speeds = [
+      ...allies.map(a => ({ id: a.id, speed: a.baseStats.speed })),
+      { id: 'enemy', speed: enemy.agility || 20 }
+    ];
+    const cts = speeds.map(() => 0);
+    const order: (string | 'enemy')[] = [];
     for (let i = 0; i < 50; i++) {
-      // Ajouter la vitesse au CT de chaque acteur
-      playerCT += playerSpeed;
-      enemyCT += enemySpeed;
-      
-      // Celui qui atteint 100 CT en premier joue
-      if (playerCT >= 100 && enemyCT >= 100) {
-        // En cas d'égalité, celui avec la plus haute vitesse joue en premier
-        if (playerSpeed >= enemySpeed) {
-          order.push('player');
-          playerCT -= 100;
-        } else {
-          order.push('enemy');
-          enemyCT -= 100;
+      speeds.forEach((actor, idx) => {
+        cts[idx] += actor.speed;
+      });
+      // Qui a le plus haut CT >= 100 ?
+      let maxCT = Math.max(...cts);
+      let readyIdxs = cts.map((ct, idx) => ct >= 100 ? idx : -1).filter(idx => idx !== -1);
+      if (readyIdxs.length > 0) {
+        // Si plusieurs, priorité à la plus grande vitesse
+        let chosenIdx = readyIdxs[0];
+        if (readyIdxs.length > 1) {
+          chosenIdx = readyIdxs.reduce((best, idx) => speeds[idx].speed > speeds[best].speed ? idx : best, readyIdxs[0]);
         }
-      } else if (playerCT >= 100) {
-        order.push('player');
-        playerCT -= 100;
-      } else if (enemyCT >= 100) {
-        order.push('enemy');
-        enemyCT -= 100;
+        order.push(speeds[chosenIdx].id);
+        cts[chosenIdx] -= 100;
       }
     }
-    
     return order;
   }
 
-  public getCurrentActor(): 'player' | 'enemy' {
+  public getCurrentActor(): string | 'enemy' {
     return this.state.turnOrder[this.state.currentTurn % this.state.turnOrder.length];
   }
 
-  public getState(): CombatState {
+  public getState(): CombatState & { allies: GatchaCharacter[], activeAllyIndex: number } {
     return { ...this.state };
   }
 
   public executePlayerAction(action: CombatAction): CombatTurn {
+    // Qui agit ?
+    const actorId = this.getCurrentActor();
+    const allyIdx = this.state.allies.findIndex(a => a.id === actorId);
+    const actingAlly = this.state.allies[allyIdx];
+    const stats = this.gatchaToPlayerStats(actingAlly);
     const turn: CombatTurn = {
-      actor: 'player',
+      actor: actorId,
       action,
       target: 'enemy'
     };
 
     switch (action.type) {
       case 'attack':
-        turn.damage = this.calculatePhysicalDamage(this.state.playerStats);
-        turn.critical = Math.random() < (this.state.playerStats.criticalRate / 100);
-        turn.missed = Math.random() > (this.state.playerStats.hitRate / 100);
-        
+        turn.damage = this.calculatePhysicalDamage(stats);
+        turn.critical = Math.random() < (stats.criticalRate / 100);
+        turn.missed = Math.random() > (stats.hitRate / 100);
         if (!turn.missed) {
           const finalDamage = turn.critical ? turn.damage * 2 : turn.damage;
           if (this.state.enemyDefending) {
@@ -85,38 +114,31 @@ export class CombatSystem {
           this.state.enemy.hp = Math.max(0, this.state.enemy.hp - turn.damage);
         }
         break;
-
       case 'magic':
-        if (this.state.playerStats.mp >= (action.mpCost || 0)) {
-          turn.damage = this.calculateMagicalDamage(this.state.playerStats);
+        if (stats.mp >= (action.mpCost || 0)) {
+          turn.damage = this.calculateMagicalDamage(stats);
           turn.missed = Math.random() > action.accuracy;
-          
           if (!turn.missed) {
             const finalDamage = this.state.enemyDefending ? Math.floor(turn.damage * 0.7) : turn.damage;
             this.state.enemy.hp = Math.max(0, this.state.enemy.hp - finalDamage);
-            this.state.playerStats.mp -= action.mpCost || 0;
+            // Consommer le MP sur l'allié
+            // (à implémenter si on veut gérer le MP de chaque allié)
           }
         }
         break;
-
       case 'defend':
         this.state.playerDefending = true;
-        // Récupère un peu de MP
-        this.state.playerStats.mp = Math.min(this.state.playerStats.maxMp, this.state.playerStats.mp + 5);
         break;
-
       case 'flee':
-        // Chance de fuir basée sur la vitesse
-        const fleeChance = Math.min(0.8, this.state.playerStats.speed / (this.state.playerStats.speed + (this.state.enemy.agility || 20)));
+        const fleeChance = Math.min(0.8, stats.speed / (stats.speed + (this.state.enemy.agility || 20)));
         if (Math.random() < fleeChance) {
-          this.state.phase = 'defeat'; // Techniquement pas une défaite mais on sort du combat
+          this.state.phase = 'defeat';
           return { ...turn, missed: false };
         } else {
           turn.missed = true;
         }
         break;
     }
-
     this.state.combatLog.push(turn);
     this.nextTurn();
     return turn;
@@ -134,34 +156,33 @@ export class CombatSystem {
       description: ''
     };
 
+    // Cible aléatoire parmi les alliés vivants
+    const livingAllies = this.state.allies.filter(a => a.baseStats.hp > 0);
+    const target = livingAllies[Math.floor(Math.random() * livingAllies.length)];
     const turn: CombatTurn = {
       actor: 'enemy',
       action,
-      target: 'player'
+      target: target ? target.id : 'player'
     };
 
     switch (randomAction) {
       case 'attack':
-        turn.damage = this.calculateEnemyDamage(this.state.enemy, this.state.playerStats);
-        turn.critical = Math.random() < 0.05; // 5% chance critique pour l'ennemi
+        turn.damage = this.calculateEnemyDamage(this.state.enemy, this.gatchaToPlayerStats(target));
+        turn.critical = Math.random() < 0.05;
         turn.missed = Math.random() > action.accuracy;
-        
         if (!turn.missed) {
           const finalDamage = turn.critical ? turn.damage * 2 : turn.damage;
-          if (this.state.playerDefending) {
-            turn.damage = Math.floor(finalDamage * 0.5);
-          } else {
-            turn.damage = finalDamage;
+          // Appliquer les dégâts à la cible
+          const idx = this.state.allies.findIndex(a => a.id === target.id);
+          if (idx !== -1) {
+            this.state.allies[idx].baseStats.hp = Math.max(0, this.state.allies[idx].baseStats.hp - finalDamage);
           }
-          this.state.playerStats.hp = Math.max(0, this.state.playerStats.hp - turn.damage);
         }
         break;
-
       case 'defend':
         this.state.enemyDefending = true;
         break;
     }
-
     this.state.combatLog.push(turn);
     this.nextTurn();
     return turn;
@@ -209,20 +230,21 @@ export class CombatSystem {
   }
 
   private nextTurn(): void {
-    // Reset des états de défense
     this.state.playerDefending = false;
     this.state.enemyDefending = false;
-    
     this.state.currentTurn++;
-    
-    // Vérifier les conditions de victoire/défaite
+    // Victoire si l'ennemi est KO
     if (this.state.enemy.hp <= 0) {
       this.state.phase = 'victory';
-    } else if (this.state.playerStats.hp <= 0) {
-      this.state.phase = 'defeat';
-    } else {
-      this.state.phase = 'action-selection';
+      return;
     }
+    // Défaite si tous les alliés sont KO
+    const allKO = this.state.allies.every(a => a.baseStats.hp <= 0);
+    if (allKO) {
+      this.state.phase = 'defeat';
+      return;
+    }
+    this.state.phase = 'action-selection';
   }
 
   public isPlayerTurn(): boolean {

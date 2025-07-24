@@ -1,4 +1,26 @@
 
+// Helpers pour progression des persos gatcha
+import { GatchaRarity, GatchaCharacter } from '../types/GatchaTypes';
+
+function getInitialXpForRarity(rarity: GatchaRarity): number {
+  switch (rarity) {
+    case 'SSR': return 100;
+    case 'SR': return 80;
+    case 'R': return 60;
+    case 'N': return 40;
+    default: return 50;
+  }
+}
+
+function ensureCharacterProgressionFields(char: GatchaCharacter): GatchaCharacter {
+  return {
+    ...char,
+    level: char.level ?? 1,
+    xp: char.xp ?? 0,
+    maxXp: char.maxXp ?? getInitialXpForRarity(char.rarity),
+  };
+}
+
 
 
 
@@ -12,8 +34,19 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { PlayerStats, ConsumableItem, Equipment, Enemy, Currency, EquipmentSlots } from '../types/GameTypes';
 import { initialPlayerStats, consumableItems, shopItems, basicEquipment } from '../data/GameData';
 import { sphereGrid, SphereNode } from '../data/SphereGrid';
+import { gatchaCharacters } from '../data/GatchaCharacters';
 
 interface GameContextType {
+  // --- Gatcha ---
+  gatchaCharactersOwned: import('../types/GatchaTypes').GatchaCharacter[];
+  team: import('../types/GatchaTypes').GatchaCharacter[];
+  gatchaTickets: number;
+  addGatchaTicket: (amount: number) => void;
+  invokeGatchaSingle: (useTicket?: boolean) => import('../types/GatchaTypes').GatchaCharacter;
+  invokeGatchaMulti: (useTicket?: boolean) => import('../types/GatchaTypes').GatchaCharacter[];
+  setTeam: (team: import('../types/GatchaTypes').GatchaCharacter[]) => void;
+  addCharacterToTeam: (charId: string) => void;
+  removeCharacterFromTeam: (charId: string) => void;
   playerStats: PlayerStats;
   inventory: ConsumableItem[];
   equipment: Equipment[];
@@ -66,6 +99,10 @@ interface GameProviderProps {
 
 export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   // Sphérier : PC et nœuds débloqués
+  const [pc, setPC] = useState(0);
+  const [sphereNodesUnlocked, setSphereNodesUnlocked] = useState<string[]>([]);
+
+  // ...existing code...
 
   // Gagner des PC
   const gainPC = (amount: number) => setPC((pc: number) => pc + amount);
@@ -83,9 +120,127 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     setPC(prev => prev - node.cost);
     return true;
   };
+
+  // Helper pour obtenir le personnage joueur principal comme GatchaCharacter-like
+  function getPlayerAsCharacter(): GatchaCharacter {
+    return {
+      id: 'player',
+      name: playerName || 'Joueur',
+      rarity: 'SSR',
+      sprite: playerAvatar || '🧑',
+      baseStats: {
+        hp: playerStats.maxHp,
+        attack: playerStats.attack,
+        defense: playerStats.defense,
+        speed: playerStats.speed,
+        magic: playerStats.magicAttack,
+      },
+      dupes: 0,
+      unbindLevel: 0,
+      level: playerStats.level,
+      xp: playerStats.xp,
+      maxXp: playerStats.maxXp,
+      description: 'Le héros principal',
+    };
+  }
+
+  // Renvoie l'équipe active pour le combat (joueur principal + équipiers)
+  const getActiveTeam = (): GatchaCharacter[] => {
+    // Le joueur principal est toujours en slot 0
+    const filteredTeam = team.filter(c => c && c.id !== 'player');
+    return [getPlayerAsCharacter(), ...filteredTeam].slice(0, 3);
+  };
+  // --- Gatcha ---
+  const [gatchaCharactersOwned, setGatchaCharactersOwned] = useState<GatchaCharacter[]>([]);
+  const [team, setTeamRaw] = useState<GatchaCharacter[]>([]); // max 3
+  const [gatchaTickets, setGatchaTickets] = useState<number>(0);
+
+  const addGatchaTicket = (amount: number) => setGatchaTickets(t => t + amount);
+
+  // Utilitaire pour obtenir un personnage aléatoire selon la rareté (SSR: 2%, SR: 8%, R: 30%, N: 60%)
+  // (import déjà en haut du fichier, à supprimer ici)
+  const rollGatcha = () => {
+    const rand = Math.random();
+    let rarity: 'SSR' | 'SR' | 'R' | 'N';
+    if (rand < 0.02) rarity = 'SSR';
+    else if (rand < 0.10) rarity = 'SR';
+    else if (rand < 0.40) rarity = 'R';
+    else rarity = 'N';
+    const pool = gatchaCharacters.filter((c: any) => c.rarity === rarity);
+    const chosen = pool[Math.floor(Math.random() * pool.length)];
+    return { ...chosen };
+  };
+
+  // Ajoute ou duplique un perso dans la collection du joueur
+  const addGatchaCharacter = (char: GatchaCharacter) => {
+    setGatchaCharactersOwned(prev => {
+      const idx = prev.findIndex(c => c.id === char.id);
+      if (idx >= 0) {
+        // Dupe : incrémente dupes ou unbindLevel
+        const updated = [...prev];
+        updated[idx] = {
+          ...updated[idx],
+          dupes: updated[idx].dupes + 1,
+          unbindLevel: Math.min(updated[idx].unbindLevel + 1, 5)
+        };
+        return updated;
+      } else {
+        // Ajoute le perso avec progression initialisée
+        return [...prev, ensureCharacterProgressionFields({ ...char, dupes: 0, unbindLevel: 0 })];
+      }
+    });
+  };
+
+  // Invocation single
+  const invokeGatchaSingle = (useTicket = false) => {
+    if (useTicket && gatchaTickets <= 0) throw new Error('Pas assez de tickets');
+    if (useTicket) setGatchaTickets(t => t - 1);
+    // Sinon, on pourra décrémenter les cristaux plus tard
+    const char = rollGatcha();
+    addGatchaCharacter(char);
+    return char;
+  };
+
+  // Invocation multi (10 pulls)
+  const invokeGatchaMulti = (useTicket = false) => {
+    if (useTicket && gatchaTickets < 10) throw new Error('Pas assez de tickets');
+    if (useTicket) setGatchaTickets(t => t - 10);
+    const results: import('../types/GatchaTypes').GatchaCharacter[] = [];
+    for (let i = 0; i < 10; i++) {
+      const char = rollGatcha();
+      addGatchaCharacter(char);
+      results.push(char);
+    }
+    return results;
+  };
+
+  // Gestion de l'équipe (max 3)
+  const addCharacterToTeam = (charId: string) => {
+    setTeamRaw(prev => {
+      // On ne peut pas ajouter le joueur principal manuellement
+      if (charId === 'player') return prev;
+      // On limite à 2 équipiers max (slot 1 et 2)
+      const filtered = prev.filter(c => c && c.id !== 'player');
+      if (filtered.length >= 2) return prev;
+      const char = gatchaCharactersOwned.find(c => c.id === charId);
+      if (!char || filtered.some(c => c.id === charId)) return prev;
+      return [...filtered, ensureCharacterProgressionFields(char)];
+    });
+  };
+  const removeCharacterFromTeam = (charId: string) => {
+    setTeamRaw(prev => prev.filter(c => c.id !== charId && c.id !== 'player'));
+  };
+  // Remplace l'équipe (drag & drop)
+  const setTeam = (newTeam: GatchaCharacter[]) => {
+    // On retire toute occurrence du joueur principal
+    const filtered = newTeam.filter(c => c && c.id !== 'player');
+    setTeamRaw(filtered.slice(0, 2));
+  };
+    // ...existing code...
   // Sphérier : PC et nœuds débloqués
-  const [pc, setPC] = useState(0);
-  const [sphereNodesUnlocked, setSphereNodesUnlocked] = useState<string[]>([]);
+
+  // ...existing code...
+  // ...existing code...
   const [playerName, setPlayerName] = useState<string>('');
   const [playerAvatar, setPlayerAvatar] = useState<string>('');
 
@@ -139,22 +294,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     const startNode = sphereGrid.find((n: SphereNode) => n.archStart === archetype.id)?.id;
     setSphereNodesUnlocked(startNode ? [startNode] : []);
     setPC(0);
-  // Gagner des PC
-  const gainPC = (amount: number) => setPC((pc: number) => pc + amount);
-
-  // Débloquer un nœud du sphérier
-  const unlockSphereNode = (nodeId: string): boolean => {
-    const node = sphereGrid.find((n: SphereNode) => n.id === nodeId);
-    if (!node) return false;
-    if (sphereNodesUnlocked.includes(nodeId)) return false;
-    // Vérifie qu'un voisin est déjà débloqué
-    const canUnlock = node.neighbors.some((n: string) => sphereNodesUnlocked.includes(n));
-    if (!canUnlock) return false;
-    if (pc < node.cost) return false;
-    setSphereNodesUnlocked(prev => [...prev, nodeId]);
-    setPC(prev => prev - node.cost);
-    return true;
-  };
     // On force la sauvegarde après que les states sont bien mis à jour
     setTimeout(() => {
       saveGame();
@@ -669,7 +808,16 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   };
 
   // -- méthodes sphérier doivent être déclarées avant value --
-  const value: GameContextType = {
+  const value: GameContextType & { getActiveTeam: () => GatchaCharacter[] } = {
+    gatchaCharactersOwned,
+    team,
+    gatchaTickets,
+    addGatchaTicket,
+    invokeGatchaSingle,
+    invokeGatchaMulti,
+    setTeam,
+    addCharacterToTeam,
+    removeCharacterFromTeam,
     playerStats,
     inventory,
     equipment,
@@ -703,7 +851,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     showLevelUpModal,
     oldLevelStats,
     newLevelStats,
-    closeLevelUpModal
+    closeLevelUpModal,
+    getActiveTeam
   };
 
 

@@ -1,0 +1,116 @@
+/* Styles pour la page et la modale gatcha */
+.gatcha-page {
+  padding: 32px 16px;
+  color: #F1C40F;
+  font-family: 'Press Start 2P', cursive;
+  background: #181818;
+  min-height: 100vh;
+}
+.gatcha-actions {
+  margin-bottom: 24px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.gatcha-actions button {
+  background: linear-gradient(90deg, #F1C40F 0%, #E67E22 100%);
+  color: #222;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 1rem;
+  font-family: 'Press Start 2P', cursive;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  transition: transform 0.1s;
+}
+.gatcha-actions button:active {
+  transform: scale(0.97);
+}
+.gatcha-owned {
+  margin-top: 32px;
+}
+.gatcha-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.gatcha-char {
+  background: #222;
+  border-radius: 10px;
+  padding: 12px 18px;
+  min-width: 120px;
+  text-align: center;
+  box-shadow: 0 2px 8px #000a;
+  font-size: 1rem;
+}
+.gatcha-sprite {
+  font-size: 2rem;
+  display: block;
+}
+.gatcha-name {
+  display: block;
+  font-size: 1.1rem;
+  color: #F1C40F;
+}
+.gatcha-rarity {
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+.gatcha-dupes {
+  font-size: 0.8rem;
+  color: #aaa;
+}
+.gatcha-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gatcha-modal {
+  background: #181818;
+  border-radius: 18px;
+  box-shadow: 0 4px 32px #000a;
+  padding: 32px 28px 24px 28px;
+  min-width: 340px;
+  max-width: 95vw;
+  color: #F1C40F;
+  text-align: center;
+  animation: popIn 0.5s cubic-bezier(.68,-0.55,.27,1.55);
+}
+.gatcha-results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  justify-content: center;
+  margin: 18px 0;
+}
+.gatcha-result {
+  background: #222;
+  border-radius: 10px;
+  padding: 16px 20px;
+  min-width: 110px;
+  text-align: center;
+  box-shadow: 0 2px 8px #000a;
+  font-size: 1.1rem;
+  position: relative;
+  animation: gatchaReveal 0.7s cubic-bezier(.68,-0.55,.27,1.55);
+}
+.gatcha-sprite-large {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 6px;
+}
+/* Couleurs par rareté */
+.rarity-n { border: 2px solid #bbb; }
+.rarity-r { border: 2px solid #3498db; }
+.rarity-sr { border: 2px solid #9b59b6; }
+.rarity-ssr { border: 2px solid #F1C40F; box-shadow: 0 0 12px #F1C40F88; }
+.rarity-ur { border: 2px solid #e74c3c; box-shadow: 0 0 16px #e74c3c88; }
+@keyframes gatchaReveal {
+  0% { transform: scale(0.7); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}

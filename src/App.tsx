@@ -11,6 +11,7 @@ import Combat from './pages/Combat';
 import Shop from './pages/Shop';
 import CharacterCreation from './pages/CharacterCreation';
 import SphereGrid from './pages/SphereGrid';
+import Gatcha from './pages/Gatcha';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import LevelUpModal from './components/LevelUpModal';
@@ -33,6 +34,7 @@ const AppContent: React.FC = () => {
             <Route path="/shop" element={<Shop />} />
             <Route path="/character-creation" element={<CharacterCreation />} />
             <Route path="/spheregrid" element={<SphereGrid />} />
+            <Route path="/gatcha" element={<Gatcha />} />
           </Routes>
         </main>
         <Footer />

@@ -1,3 +1,4 @@
+import TeamManager from '../components/TeamManager';
 // src/pages/Profile.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -299,6 +300,12 @@ const Profile: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Gestion de l'équipe gatcha */}
+      <div className="team-manager-section" style={{ margin: '32px 0' }}>
+        <h3 style={{ color: '#F1C40F', fontFamily: 'Press Start 2P, cursive', marginBottom: 12 }}>Équipe de Combat</h3>
+        <TeamManager />
       </div>
       {/* Sphérier access button (level 5+) */}
       {playerStats.level >= 5 ? (

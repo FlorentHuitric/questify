@@ -12,11 +12,21 @@ const Combat: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { enemy } = location.state as { enemy: Enemy };
-  const { inventory, useItem, addItem, addGold, getEnemyDrops, updatePlayerStats, getTotalStats } = useGame();
-  
-  const totalPlayerStats = getTotalStats();
-  const [combatSystem] = useState(() => new CombatSystem(totalPlayerStats, enemy));
+  const { inventory, useItem, addItem, addGold, getEnemyDrops, updatePlayerStats, getTotalStats, getActiveTeam } = useGame();
+
+  // Récupère l'équipe active (joueur + équipiers)
+  const activeTeam = getActiveTeam();
+  const [combatSystem, setCombatSystem] = useState(() => new CombatSystem(activeTeam, enemy));
   const [combatState, setCombatState] = useState(combatSystem.getState());
+
+  // Réinitialise le système de combat si l'équipe ou l'ennemi change
+  React.useEffect(() => {
+    const newSystem = new CombatSystem(getActiveTeam(), enemy);
+    setCombatSystem(newSystem);
+    setCombatState(newSystem.getState());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(activeTeam.map(c => c.id)), enemy.id]);
+  // TODO: Utiliser activeTeam pour supporter le multi-personnage en combat
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
   const [animating, setAnimating] = useState(false);
   const [showSpells, setShowSpells] = useState(false);
@@ -105,7 +115,12 @@ const Combat: React.FC = () => {
     handleAction(itemAction);
   };
 
+  // Affiche les actions pour le personnage dont c'est le tour
   const renderActionButtons = () => {
+    const actorId = combatSystem.getCurrentActor();
+    const actor = activeTeam.find(a => a.id === actorId);
+    if (!actor || combatState.phase !== 'action-selection') return null;
+
     if (showItems) {
       return (
         <div className="action-buttons">
@@ -119,7 +134,7 @@ const Combat: React.FC = () => {
             <button
               key={index}
               onClick={() => handleItemUse(item)}
-              disabled={animating || !combatSystem.isPlayerTurn() || item.quantity <= 0}
+              disabled={animating || item.quantity <= 0}
               className={`action-button item ${item.quantity <= 0 ? 'disabled' : ''}`}
             >
               <div className="item-sprite">{item.sprite}</div>
@@ -145,8 +160,8 @@ const Combat: React.FC = () => {
             <button
               key={index}
               onClick={() => handleAction(spell)}
-              disabled={animating || !combatSystem.isPlayerTurn() || (combatState.playerStats.mp < (spell.mpCost || 0))}
-              className={`action-button ${spell.type} ${spell.mpCost && combatState.playerStats.mp < spell.mpCost ? 'disabled' : ''}`}
+              disabled={animating}
+              className={`action-button ${spell.type}`}
             >
               <div className="action-name">{spell.name}</div>
               <div className="action-cost">MP: {spell.mpCost || 0}</div>
@@ -158,6 +173,9 @@ const Combat: React.FC = () => {
 
     return (
       <div className="action-buttons">
+        <div style={{ marginBottom: 8, color: '#F1C40F', fontWeight: 'bold' }}>
+          {actor.sprite} {actor.name} ({actor.rarity}) - Tour de ce personnage
+        </div>
         {availableActions.map((action, index) => (
           <button
             key={index}
@@ -166,7 +184,7 @@ const Combat: React.FC = () => {
               else if (action.type === 'item') setShowItems(true);
               else handleAction(action);
             }}
-            disabled={animating || !combatSystem.isPlayerTurn()}
+            disabled={animating}
             className={`action-button ${action.type} ${selectedAction === action.type ? 'selected' : ''}`}
           >
             <div className="action-name">{action.name}</div>
@@ -222,30 +240,19 @@ const Combat: React.FC = () => {
 
       <div className="battle-field">
         <div className="player-side">
-          <div className={`player-avatar ${selectedAction ? 'attacking' : ''}`}>
-            🧙‍♂️
-          </div>
-          <div className="stats-display">
-            <div className="stat-bar">
-              <label>PV</label>
-              <div className="bar hp-bar">
-                <div 
-                  className="bar-fill" 
-                  style={{ width: `${(combatState.playerStats.hp / combatState.playerStats.maxHp) * 100}%` }}
-                />
-                <span>{combatState.playerStats.hp}/{combatState.playerStats.maxHp}</span>
+          <div className="team-avatars" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {combatState.allies && combatState.allies.map((member: any, idx: number) => (
+              <div key={member.id} className={`team-member-avatar${idx === 0 ? ' main' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <span style={{ fontSize: 40 }}>{member.sprite}</span>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontWeight: 'bold', color: idx === 0 ? '#F1C40F' : '#fff' }}>{member.name}</span>
+                  <span style={{ fontSize: 12, color: '#aaa' }}>Lv.{member.level} {member.rarity}</span>
+                  <span style={{ fontSize: 12, color: member.baseStats.hp > 0 ? '#e74c3c' : '#888' }}>PV: {member.baseStats.hp}</span>
+                  <span style={{ fontSize: 12, color: '#3498db' }}>ATK: {member.baseStats.attack} DEF: {member.baseStats.defense}</span>
+                  <span style={{ fontSize: 12, color: '#9b59b6' }}>MAG: {member.baseStats.magic} SPD: {member.baseStats.speed}</span>
+                </div>
               </div>
-            </div>
-            <div className="stat-bar">
-              <label>PM</label>
-              <div className="bar mp-bar">
-                <div 
-                  className="bar-fill" 
-                  style={{ width: `${(combatState.playerStats.mp / combatState.playerStats.maxMp) * 100}%` }}
-                />
-                <span>{combatState.playerStats.mp}/{combatState.playerStats.maxMp}</span>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
